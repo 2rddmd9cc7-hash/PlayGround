@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="wave-track.css" />
   <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.161.0/build/three.module.js"}}</script>
 </head>
 <body>
@@ -31,7 +32,7 @@
   <div class="toast" id="toast"></div>
   <div class="dialogue glass" id="dialogue"><div class="dialogue-head"><div class="speaker-icon">✧</div><div><small id="speakerRole">GUARDIÃ DA VILA</small><h3 id="speakerName">Capitã Lyra</h3></div><button id="closeDialogue">×</button></div><p id="dialogueText"></p><div id="dialogueChoices" class="dialogue-choices"></div><div class="dialogue-foot">PRESSIONE <b>ESPAÇO</b> OU <b>E</b> PARA CONTINUAR</div></div>
   <div class="hotbar glass"><div class="hotbar-title"><span>ARSENAL ELEMENTAL</span><span id="elementName">FOGO</span></div><div class="skill-list" id="skillList"></div><div class="hotbar-hint"><span>1 – 2 – 3</span> SELECIONAR <i>·</i> CLIQUE PARA LANÇAR</div></div>
-  <div class="wave-card glass"><small>ARENA DE AURELIA</small><div class="wave-title">ONDA <b id="waveNumber">0</b><span id="waveRank">—</span></div><div class="wave-desc" id="waveDesc">A praça está tranquila</div><button id="waveBtn">✦ &nbsp; INICIAR DESAFIO</button></div>
+  <div class="wave-card glass"><small>ARENA DE AURELIA</small><div class="wave-title">ONDA <b id="waveNumber">0</b><span id="waveRank">—</span></div><div class="wave-track" id="waveTrack" aria-label="Progresso das sete ondas"></div><div class="wave-desc" id="waveDesc">A praça está tranquila</div><button id="waveBtn">✦ &nbsp; INICIAR DESAFIO</button></div>
   <div class="bottom-hint"><span>WASD</span> MOVER <i>·</i> <span>ESPAÇO</span> ESQUIVAR <i>·</i> <span>E</span> INTERAGIR <i>·</i> <span>CLIQUE</span> ATACAR</div>
   <div id="mapOverlay" class="overlay"><div class="map-panel glass"><button id="closeMap" class="close-btn">×</button><small>ATLAS DAS TERRAS DESPERTAS</small><h2>Um mundo por descobrir</h2><div class="world-map" id="worldMap"></div><div class="map-legend"><span>✦ Aurelia</span><span>♜ Reino de Eldoria</span><span>❄ Geleira Boreal</span><span>☀ Dunas de Solares</span><span>◉ Você</span></div><p>Explore trilhas, encontre comunidades e desvende os mistérios além da invasão.</p></div></div>
   <div id="shopOverlay" class="overlay"><div class="shop-panel glass"><button id="closeShop" class="close-btn">×</button><small>MERCADO DE AURELIA</small><h2>Suprimentos de aventura</h2><p class="shop-gold">Seu ouro: <b id="shopGold">120</b> ◈</p><div class="shop-items" id="shopItems"></div><p class="shop-note">Itens e melhorias ficam salvos no seu progresso.</p></div></div>
