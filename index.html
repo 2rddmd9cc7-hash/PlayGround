@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#101b2c" />
+  <title>Crônicas de Aetheria</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.161.0/build/three.module.js"}}</script>
+</head>
+<body>
+  <div id="game"></div>
+  <div class="vignette"></div>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">✦</div><div><div class="brand-title">CRÔNICAS DE AETHERIA</div><div class="brand-sub">AS TERRAS DESPERTAS</div></div></div>
+    <div class="region-pill"><span class="pin">⌖</span><span id="regionName">AURELIA</span><i></i><span id="weather">BRISA SERENA</span></div>
+    <div class="top-actions"><button id="mapBtn" class="icon-btn" title="Mapa">⌖</button><button id="soundBtn" class="icon-btn" title="Som">♫</button><button id="helpBtn" class="icon-btn" title="Controles">?</button></div>
+  </header>
+  <aside class="left-panel glass">
+    <div class="hero-row"><div class="avatar">✦</div><div><div id="heroName">Viajante</div><div class="class-line">APRENDIZ ARCANO <span id="levelText">NÍV. 1</span></div></div></div>
+    <div class="stat-line"><span>VIDA</span><b id="hpText">100 / 100</b></div><div class="bar hp"><div id="hpBar"></div><span>♥</span></div>
+    <div class="stat-line"><span>MANA</span><b id="mpText">100 / 100</b></div><div class="bar mp"><div id="mpBar"></div><span>✦</span></div>
+    <div class="xp-meta"><span>EXPERIÊNCIA</span><span id="xpText">0 / 100 XP</span></div><div class="bar xp"><div id="xpBar"></div></div>
+    <div class="wallet"><span>◈</span><b id="goldText">120</b><small>OURO</small><span class="wallet-divider"></span><span>⚔</span><b id="killText">0</b><small>ABATES</small></div>
+  </aside>
+  <section class="quest-card glass"><div class="quest-kicker"><span class="quest-icon">✧</span> MISSÃO PRINCIPAL <span class="quest-live">ATIVA</span></div><h2 id="questTitle">Ecos da invasão</h2><p id="questText">Encontre a capitã Lyra na praça de Aurelia.</p><div class="quest-progress"><span id="questProgress"></span></div><small id="questStep">A HISTÓRIA COMEÇA AQUI</small></section>
+  <div class="compass glass"><div class="compass-head"><span>N</span><i>⌖</i></div><div class="compass-label">AURELIA · 0 m</div></div>
+  <div class="interaction" id="interaction"><span class="keycap">E</span><span id="interactionText">Conversar</span></div>
+  <div class="toast" id="toast"></div>
+  <div class="dialogue glass" id="dialogue"><div class="dialogue-head"><div class="speaker-icon">✧</div><div><small id="speakerRole">GUARDIÃ DA VILA</small><h3 id="speakerName">Capitã Lyra</h3></div><button id="closeDialogue">×</button></div><p id="dialogueText"></p><div id="dialogueChoices" class="dialogue-choices"></div><div class="dialogue-foot">PRESSIONE <b>ESPAÇO</b> OU <b>E</b> PARA CONTINUAR</div></div>
+  <div class="hotbar glass"><div class="hotbar-title"><span>ARSENAL ELEMENTAL</span><span id="elementName">FOGO</span></div><div class="skill-list" id="skillList"></div><div class="hotbar-hint"><span>1 – 2 – 3</span> SELECIONAR <i>·</i> CLIQUE PARA LANÇAR</div></div>
+  <div class="wave-card glass"><small>ARENA DE AURELIA</small><div class="wave-title">ONDA <b id="waveNumber">0</b><span id="waveRank">—</span></div><div class="wave-desc" id="waveDesc">A praça está tranquila</div><button id="waveBtn">✦ &nbsp; INICIAR DESAFIO</button></div>
+  <div class="bottom-hint"><span>WASD</span> MOVER <i>·</i> <span>ESPAÇO</span> ESQUIVAR <i>·</i> <span>E</span> INTERAGIR <i>·</i> <span>CLIQUE</span> ATACAR</div>
+  <div id="mapOverlay" class="overlay"><div class="map-panel glass"><button id="closeMap" class="close-btn">×</button><small>ATLAS DAS TERRAS DESPERTAS</small><h2>Um mundo por descobrir</h2><div class="world-map" id="worldMap"></div><div class="map-legend"><span>✦ Aurelia</span><span>♜ Reino de Eldoria</span><span>❄ Geleira Boreal</span><span>☀ Dunas de Solares</span><span>◉ Você</span></div><p>Explore trilhas, encontre comunidades e desvende os mistérios além da invasão.</p></div></div>
+  <div id="shopOverlay" class="overlay"><div class="shop-panel glass"><button id="closeShop" class="close-btn">×</button><small>MERCADO DE AURELIA</small><h2>Suprimentos de aventura</h2><p class="shop-gold">Seu ouro: <b id="shopGold">120</b> ◈</p><div class="shop-items" id="shopItems"></div><p class="shop-note">Itens e melhorias ficam salvos no seu progresso.</p></div></div>
+  <div id="helpOverlay" class="overlay"><div class="help-panel glass"><button class="close-btn" data-close="helpOverlay">×</button><small>GUIA DO VIAJANTE</small><h2>Como jogar</h2><div class="help-grid"><div><b>W A S D</b><span>Movimentar pelo mundo</span></div><div><b>MOUSE</b><span>Mirar e lançar habilidade</span></div><div><b>1 · 2 · 3</b><span>Trocar habilidade</span></div><div><b>ESPAÇO</b><span>Esquiva rápida</span></div><div><b>E</b><span>Conversar / interagir</span></div><div><b>TOQUE</b><span>Joystick, mirar e atacar</span></div></div><p>Conheça Aurelia, encare a arena e viaje para as regiões distantes. O progresso é salvo automaticamente.</p></div></div>
+  <div id="levelUp" class="levelup glass"><div>✦</div><small>SEU PODER DESPERTOU</small><h2>Nível <span id="newLevel">2</span></h2><p>Vida e mana restauradas. Seu poder cresce!</p></div>
+  <div class="mobile-controls"><div class="joystick" id="joystick"><div class="joy-knob" id="joyKnob"></div></div><button class="mobile-dodge" id="mobileDodge">↗</button><button class="mobile-attack" id="mobileAttack">✦<small>ATACAR</small></button></div>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
