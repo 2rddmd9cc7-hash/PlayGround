@@ -4,6 +4,11 @@
 
 RPG 3D medieval de fantasia, jogável no navegador com Three.js (módulo local em `vendor/`).
 
+### Baixar
+- **ZIP pronto para jogar**: [`release/Cronicas-de-Aetheria.zip`](release/Cronicas-de-Aetheria.zip) (extraia e siga o `COMO-JOGAR.txt`).
+- **Jogar sem baixar**: ative o GitHub Pages em *Settings → Pages → Source: GitHub Actions*; o site é publicado em `https://2rddmd9cc7-hash.github.io/PlayGround/`.
+- Repositório: https://github.com/2rddmd9cc7-hash/PlayGround
+
 ### Como jogar
 Abra `index.html` por um servidor estático (ex.: `npx serve .`) e clique em **Novo Jogo**.
 
