@@ -9,6 +9,7 @@ import { audio } from './audio/audio.js';
 import { effects } from './effects/effects.js';
 import { World, REGIONS } from './world/world.js';
 import { Sky } from './world/sky.js';
+import { AnimalManager } from './world/animals.js';
 import { terrainHeight } from './world/terrain.js';
 import { Player } from './player/player.js';
 import { ThirdPersonCamera } from './player/camera.js';
@@ -110,6 +111,8 @@ class Game {
     G.enemies.buildAll(this.scene);
     G.npcs = new NPCManager();
     G.npcs.build(this.scene);
+    G.animals = new AnimalManager();
+    G.animals.build(this.scene);
     G.quests = new QuestSystem();
     G.inventory = new Inventory();
     G.inventory.init();
@@ -532,6 +535,7 @@ class Game {
       G.world.update(dt, G.player.root.position);
       // entidades
       G.npcs.update(dt, G.player.root.position);
+      G.animals.update(dt, G.player.root.position);
       G.enemies.update(dt, G.player.root.position);
       G.magic.update(dt, G.camera);
       G.projectiles.update(dt);
@@ -549,6 +553,8 @@ class Game {
 
       // música por contexto
       this.updateMusic(dt);
+      // ambiência sonora (pássaros de dia, grilos à noite, vento nos campos)
+      this.updateAmbient(dt);
 
       // interações próximas
       this.updateInteract();
@@ -583,6 +589,27 @@ class Game {
 
     this.renderer.render(this.scene, G.camera);
     input.consume();
+  }
+
+  // ambiência: sons sutis por região e horário, em intervalos aleatórios
+  updateAmbient(dt) {
+    this._ambT = (this._ambT || 5) - dt;
+    if (this._ambT > 0) return;
+    this._ambT = 5 + Math.random() * 7;
+    if (G.paused || !G.sky) return;
+    const night = G.sky.isNight;
+    const region = G.world.regionAt(G.player.root.position.x, G.player.root.position.z)?.id || 'campos';
+    const r = Math.random();
+    if (night) {
+      if (r < 0.55) audio.sfx('cricket');
+      else if (r < 0.75) audio.sfx('windGust');
+    } else if (region === 'vila' || region === 'cidade' || region === 'floresta') {
+      if (r < 0.55) audio.sfx('bird');
+      else if (r < 0.7) audio.sfx('windGust');
+    } else {
+      if (r < 0.45) audio.sfx('windGust');
+      else if (r < 0.6) audio.sfx('bird');
+    }
   }
 
   updateMusic(dt) {

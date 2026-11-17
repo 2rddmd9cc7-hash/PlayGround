@@ -83,6 +83,21 @@ export class World {
 
     this._buildVillage(scene);
     this._buildCity(scene);
+    // acampamento goblin na estrada da cidade (missão "Estrada Perigosa")
+    const roadCamp = { x: 52, z: -118 };
+    for (let i = 0; i < 3; i++) {
+      const t = P.makeTent();
+      const a = (i / 3) * Math.PI * 2 + 0.4;
+      P.placeAt(t, roadCamp.x + Math.cos(a) * 6, roadCamp.z + Math.sin(a) * 6, a);
+      scene.add(t);
+      this.addCollider(roadCamp.x + Math.cos(a) * 6, roadCamp.z + Math.sin(a) * 6, 1.6);
+    }
+    const roadFire = P.makeTorch(1.1);
+    P.placeAt(roadFire, roadCamp.x, roadCamp.z);
+    scene.add(roadFire);
+    this.torchFlames.push({ flame: roadFire.userData.flame, light: null, x: roadCamp.x, z: roadCamp.z });
+    this.spawns.push({ type: 'goblinGuerreiro', x: roadCamp.x, z: roadCamp.z, r: 20, rank: 'D', count: 3, region: 'estrada' });
+    this.spawns.push({ type: 'goblin', x: roadCamp.x + 14, z: roadCamp.z + 10, r: 14, rank: 'E', count: 2, region: 'estrada' });
     this._buildForest(scene);
     this._buildLake(scene);
     this._buildMountains(scene);

@@ -8,6 +8,7 @@ export const G = {
   sky: null,
   enemies: null,      // EnemyManager
   npcs: null,         // NPCManager
+  animals: null,      // AnimalManager (galinhas, cervos)
   quests: null,
   inventory: null,
   hud: null,

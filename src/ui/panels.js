@@ -189,7 +189,12 @@ class Panels {
     const withChoices = [...lines];
     const last = withChoices[withChoices.length - 1];
     const choices = [];
-    if (npc.def.shop && G.storyFlags?.testDone) choices.push({ label: '🛒 Ver produtos', action: 'shop' });
+    if (npc.def.shop && G.storyFlags?.testDone) {
+      const closed = G.sky?.isNight;
+      choices.push(closed
+        ? { label: '🌙 Banca fechada (volte de dia)', action: 'shop_closed' }
+        : { label: '🛒 Ver produtos', action: 'shop' });
+    }
     if (npc.def.dialog === 'elder' && !G.quests.activeIds.includes('main_teste') && !G.storyFlags?.testDone) choices.push({ label: '📜 Sobre o Teste do Poder', action: 'quest_teste' });
     if (npc.def.dialog === 'priest' && !G.quests.doneIds.includes('herbs')) choices.push({ label: '🌿 Oferecer ervas', action: 'quest_herbs' });
     if (npc.def.dialog === 'captain' && G.chapter >= 4 && !G.quests.doneIds.includes('hunt_goblins')) choices.push({ label: '⚔️ Aceitar caça aos goblins', action: 'quest_hunt' });
@@ -223,6 +228,7 @@ class Panels {
   _handleChoice(action) {
     switch (action) {
       case 'shop': this.openShop(this._pendingNpc?.npc?.def?.shop || this._lastShopNpc || 'general'); break;
+      case 'shop_closed': G.hud?.hint('🌙 A banca está fechada. Comerciantes abrem ao amanhecer.', 4000); break;
       case 'quest_teste': G.quests.offer('main_teste'); G.hud?.hint('Missão aceita: vá ao castelo de Aurelia ao norte!'); break;
       case 'quest_herbs':
         if (G.inventory.count('erva') >= 3) {
