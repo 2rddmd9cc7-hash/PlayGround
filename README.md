@@ -1,5 +1,37 @@
 # PlayGround
 
+## ⚔️ Crônicas de Aetheria
+
+RPG 3D medieval de fantasia, jogável no navegador com Three.js (módulo local em `vendor/`).
+
+### Como jogar
+Abra `index.html` por um servidor estático (ex.: `npx serve .`) e clique em **Novo Jogo**.
+
+### Controles
+| Tecla | Ação |
+|---|---|
+| WASD | Mover |
+| Botão esquerdo / Segurar | Ataque leve (combo) / ataque pesado |
+| Botão direito | Girar câmera |
+| Espaço | Esquiva |
+| E | Interagir (NPC, baú, porta, missão) |
+| G | Grimório (magias) |
+| 1–4 | Lançar magias |
+| I | Inventário / equipamentos |
+| M | Mapa |
+| C | Bloquear (guerreiro com escudo) |
+| Esc | Pausa |
+
+### Sistemas
+- **Classes**: Guerreiro (espada+escudo), Mago (cajado), Arqueiro (arco) — escolha no início, arma guardada até sacar.
+- **Combate**: máquina de estados (idle/movimento/ataque/recuperação/dano/morte) com watchdog; combos, ataque pesado, esquiva e bloqueio.
+- **Magias**: 6 elementos com projéteis, áreas, partículas, iluminação e impacto.
+- **Mundo**: vila, cidade de Aurelia (muralhas, castelo, mercado, taverna, ferreiro), floresta, lago, montanhas, vulcão, pântano, ruínas e masmorra.
+- **NPCs**: rotinas dia/noite, patrulhas com rotas, 5 comerciantes funcionais (armas, poções, arcos, geral), horário de funcionamento.
+- **Missões**: campanha principal em 6 capítulos + cadeias secundárias (invasão → ferreiro → estrada perigosa).
+- **Vida ambiente**: ciclo dia/noite, clima, tochas, fogueiras, pássaros/grilos/vento, galinhas e cervos.
+- **Salvamento**: automático/manual (`localStorage`) incluindo classe, equipamento, quests e posição.
+
 <!-- omgithub:readme:start -->
 ## 🚀 Build, play, and remix with OMGithub
 

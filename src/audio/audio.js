@@ -116,6 +116,18 @@ class AudioSys {
         case 'talk': this.tone(0, { freq: 350 + Math.random() * 250, dur: 0.06, type: 'sine', vol: 0.07 }); break;
         case 'death': this.tone(0, { freq: 300, dur: 0.6, type: 'sawtooth', vol: 0.2, slide: 0.2 }); break;
         case 'bossRoar': this.tone(0, { freq: 120, dur: 1.1, type: 'sawtooth', vol: 0.3, slide: 0.5 }); this.noise(0, { dur: 0.9, freq: 300, q: 0.5, vol: 0.3, slide: 0.4 }); break;
+        // ambiência
+        case 'bird': {
+          const base = 2200 + Math.random() * 1400;
+          this.tone(0, { freq: base, dur: 0.09, type: 'sine', vol: 0.05, slide: 1.4 });
+          this.tone(0.11, { freq: base * 1.15, dur: 0.07, type: 'sine', vol: 0.04, slide: 1.2 });
+          break;
+        }
+        case 'cricket': {
+          for (let i = 0; i < 3; i++) this.tone(i * 0.06, { freq: 4200 + Math.random() * 300, dur: 0.025, type: 'square', vol: 0.022 });
+          break;
+        }
+        case 'windGust': this.noise(0, { dur: 1.6, freq: 420 + Math.random() * 240, q: 0.4, vol: 0.05, slide: 0.7 }); break;
       }
     } catch (e) { /* sfx nunca deve quebrar o jogo */ }
   }
