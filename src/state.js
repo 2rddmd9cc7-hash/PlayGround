@@ -94,6 +94,7 @@ export function angleDiff(a, b) {
 const CELL = 12;
 
 export function addCollider(x, z, r, h = 3, y0 = 0) {
+  if (!G.colliderGrid) G.colliderGrid = new Map()
   const c = { x, z, r, h, y0 };
   G.colliders.push(c);
   const cx = Math.floor(x / CELL);
@@ -110,6 +111,7 @@ export function addCollider(x, z, r, h = 3, y0 = 0) {
 
 export function collidersNear(x, z, out = []) {
   out.length = 0;
+  if (!G.colliderGrid) G.colliderGrid = new Map()
   const cx = Math.floor(x / CELL);
   const cz = Math.floor(z / CELL);
   for (let i = -1; i <= 1; i += 1) {

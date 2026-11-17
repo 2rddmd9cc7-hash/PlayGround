@@ -221,7 +221,7 @@ export function updatePlayer(p, dt) {
     if (Input.isDown('KeyA')) ix -= 1
     if (Input.isDown('KeyD')) ix += 1
     const va = Input.virtualAxis()
-    ix += va.x; iz += va.y
+    ix += va.x; iz += va.z
   }
   const len = Math.hypot(ix, iz)
   if (len > 1) { ix /= len; iz /= len }

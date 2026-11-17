@@ -2,7 +2,7 @@
    Mundo — terreno, vila, cidade, castelo, natureza e regiões.
    ============================================================ */
 import * as THREE from 'three'
-import { G, addCollider, smoothstep, lerp, rand, randInt, pick, TAU } from './state.js'
+import { G, addCollider, smoothstep, lerp, rand, randInt, pick, TAU, clamp } from './state.js'
 
 export const WATER_Y = -0.8
 export const VILLAGE = { x: 0, z: 0 }
@@ -173,7 +173,7 @@ let crystalMesh = null, crystalBase = null
 export function getCrystal() { return { mesh: crystalMesh, base: crystalBase } }
 
 function buildTerrain() {
-  const size = 500, seg = 210
+  const size = 500, seg = 170
   const geo = new THREE.PlaneGeometry(size, size, seg, seg)
   geo.rotateX(-Math.PI / 2)
   const pos = geo.attributes.position

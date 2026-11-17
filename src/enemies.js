@@ -3,7 +3,7 @@
    ============================================================ */
 import * as THREE from 'three'
 import { G, clamp, rand, randInt, pick, angleDiff, addCollider, resolveCircle } from './state.js'
-import { groundAt } from './world.js'
+import { groundAt, CAMPS } from './world.js'
 import { hurtPlayer, gainXp } from './player.js'
 import { sfx } from './audio.js'
 import { burst, ring } from './effects.js'
@@ -531,12 +531,9 @@ export function nearestEnemy(x, z, maxD = 25) {
 
 /* ---------- guardas dos acampamentos ---------- */
 export function spawnCampGuards() {
-  const { CAMPS } = worldConsts
   for (const c of CAMPS) {
     spawnEnemy('Goblin', 'E', c.x + 2, c.z + 2, { camp: c, respawn: 45 })
     spawnEnemy('Goblin Guerreiro', 'E', c.x - 2, c.z - 2, { camp: c, respawn: 45 })
     spawnEnemy('Goblin Arqueiro', 'D', c.x, c.z + 4, { camp: c, respawn: 60 })
   }
 }
-
-import { CAMPS as worldConsts } from './world.js'

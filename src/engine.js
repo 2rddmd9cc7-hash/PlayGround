@@ -27,7 +27,7 @@ const cA = new THREE.Color(), cB = new THREE.Color(), cOut = new THREE.Color()
 export function initEngine(canvas) {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
   renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.35))
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
@@ -43,9 +43,9 @@ export function initEngine(canvas) {
 
   sunLight = new THREE.DirectionalLight(0xffffff, 2)
   sunLight.castShadow = true
-  sunLight.shadow.mapSize.set(2048, 2048)
+  sunLight.shadow.mapSize.set(1024, 1024)
   const sc = sunLight.shadow.camera
-  sc.left = -55; sc.right = 55; sc.top = 55; sc.bottom = -55; sc.near = 10; sc.far = 260
+  sc.left = -42; sc.right = 42; sc.top = 42; sc.bottom = -42; sc.near = 10; sc.far = 240
   sunLight.shadow.bias = -0.0006
   scene.add(sunLight); scene.add(sunLight.target)
 
@@ -80,6 +80,10 @@ export function initEngine(canvas) {
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
   })
+
+  G.renderer = renderer
+  G.scene = scene
+  G.camera = camera
 }
 
 export function isNight() { return G.hour < 5.8 || G.hour > 19.2 }
@@ -135,12 +139,12 @@ export function updateEnvironment(dt) {
   for (let k = 0; k < near.length; k++) {
     const p = near[k].p
     if (p.light) p.light.intensity = k < 9 && (isNight() || p.fx === 'water') ? (p.fx === 'water' ? 0.7 : 1.5) : k < 9 ? 0.35 : 0
-    if (k < 6 && pitTimer <= 0 && !p.lamp) {
+    if (k < 3 && pitTimer <= 0 && !p.lamp) {
       burst(p.fx || 'fire', p.x, p.y, p.z, p.fx === 'water' ? 0.9 : 0.55)
       if (p.fx !== 'water' && Math.random() < 0.3) burst('smoke', p.x, p.y + 0.4, p.z, 0.5)
     }
   }
-  if (pitTimer <= 0) pitTimer = 0.16
+  if (pitTimer <= 0) pitTimer = 0.24
   updateMusic(dt)
   applyVolumes()
 }

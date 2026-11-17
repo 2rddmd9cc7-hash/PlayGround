@@ -2,12 +2,12 @@
    Magia — conjuração, projéteis e habilidades especiais.
    ============================================================ */
 import * as THREE from 'three'
-import { G, clamp, rand } from './state.js'
+import { G, clamp, rand, addCollider } from './state.js'
 import { ELEMENTS } from './elements.js'
 import { damageEnemy, enemies } from './enemies.js'
 import { sfx } from './audio.js'
 import { burst, ring, ELEM_FX } from './effects.js'
-import { groundAt, addCollider } from './world.js'
+import { groundAt } from './world.js'
 
 const GRAV = 14
 const projs = []
