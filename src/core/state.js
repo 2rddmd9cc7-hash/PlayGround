@@ -28,7 +28,7 @@ export const G = {
   attrPoints: 0,
   element: null,
   spells: {},           // spellId -> { level:1, uses:0 }
-  equipment: { weapon: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null },
+  equipment: { weapon: null, offhand: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null },
   inventory_list: [],
   magic: null,
   projectiles: null,

@@ -254,7 +254,8 @@ class Game {
       discovered: [], grimoireLevel: 1, playtime: 0, timeOfDay: 9,
     });
     G.attributes = { forca: 5, defesa: 5, velocidade: 5, mana: 5, poder: 5, resistencia: 5, critico: 5 };
-    G.equipment = { weapon: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null };
+    G.equipment = { weapon: null, offhand: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null };
+    G.classe = null;
     G.inventory_list = [];
     G.quests = new QuestSystem();
     G.inventory = new Inventory();
@@ -271,6 +272,7 @@ class Game {
           chapter: save.chapter, storyFlags: save.storyFlags || {}, discovered: save.discovered || [],
           grimoireLevel: save.grimoireLevel || 1, playtime: save.playtime || 0, timeOfDay: save.timeOfDay ?? 9,
         });
+        G.classe = save.classe || null;
         G.attributes = { ...G.attributes, ...(save.attributes || {}) };
         G.equipment = { ...G.equipment, ...(save.equipment || {}) };
         G.inventory_list = save.inventory_list || [];
@@ -322,17 +324,23 @@ class Game {
     if (G.mobile) G.hud.hint('📱 Joystick à esquerda, câmera arrastando à direita, botões à direita.', 8000);
     else G.hud.hint('WASD mover · Botão esquerdo atacar · Botão direito girar câmera · E interagir · G grimório', 9000);
 
-    // primeira conversa com o ancião
+    // primeira conversa com o ancião (após a escolha de classe em novo jogo)
     if (!continuar) {
       setTimeout(() => {
-        G.ui.startDialog([
-          { name: 'Ancião Bram', text: 'Você acordou, Kael. Hoje é um dia importante para Pedravale.' },
-          { name: 'Ancião Bram', text: 'Venha até a praça quando estiver pronto. Preciso falar com você sobre o seu destino.' },
-        ], null, () => {
-          G.quests.offer('main_teste');
-          G.hud.hint('Objetivo: converse com o Ancião Bram na praça (marcado no minimapa).');
+        G.ui.openClassSelect(() => {
+          G.ui.startDialog([
+            { name: 'Ancião Bram', text: 'Você acordou, Kael. Hoje é um dia importante para Pedravale.' },
+            { name: 'Ancião Bram', text: 'Venha até a praça quando estiver pronto. Preciso falar com você sobre o seu destino.' },
+          ], null, () => {
+            G.quests.offer('main_teste');
+            G.hud.hint('Objetivo: converse com o Ancião Bram na praça (marcado no minimapa).');
+          });
         });
       }, 1200);
+    } else if (G.equipment.weapon && G.player) {
+      // save carregado com arma: já vem sacada
+      G.player.weaponState = 'drawn';
+      G.player.refreshEquipment();
     }
     this.running = true;
   }
@@ -533,6 +541,8 @@ class Game {
 
       // invasão
       G.story.updateInvasion(dt);
+      // arco final: spaw de Morgath por proximidade
+      G.story.updateFinal(dt);
 
       // stamina regen natural extra
       // (já feita no player)

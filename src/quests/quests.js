@@ -93,6 +93,21 @@ export const QUEST_DEFS = {
     objectives: [{ id: 'kill', text: 'Derrote Elementais de Fogo (0/2)', count: 2, target: 'kill', type: 'fogoElemental' }],
     rewards: { xp: 250, gold: 180, item: 'lamba_prisma' },
   },
+  // ------- cadeia pós-invasão: Ferreiro → Estrada Perigosa -------
+  blacksmith_worry: {
+    id: 'blacksmith_worry', title: 'O Ferreiro Preocupado', type: 'secundária',
+    desc: 'Depois da invasão, o Ferreiro Doran quer falar com quem defendeu a cidade.',
+    objectives: [{ id: 'talk', text: 'Fale com o Ferreiro Doran', target: 'flag' }],
+    rewards: { xp: 60, gold: 40 },
+    giver: 'blacksmith',
+  },
+  dangerous_road: {
+    id: 'dangerous_road', title: 'Estrada Perigosa', type: 'caça',
+    desc: 'Goblins acampados nas redondezas ameaçam a estrada da cidade. Limpe o caminho.',
+    objectives: [{ id: 'kill', text: 'Derrote goblins fora da cidade (0/5)', count: 5, target: 'kill', type: 'goblinGuerreiro' }],
+    rewards: { xp: 180, gold: 120, item: 'pocao_elixir' },
+    giver: 'blacksmith',
+  },
 };
 
 class QuestSystem {

@@ -10,13 +10,20 @@ export const RARITIES = {
 
 export const ITEMS = {
   // armas
-  espada_ferro:     { name: 'Espada de Ferro', type: 'weapon', slot: 'weapon', icon: '🗡️', rarity: 'comum', dmg: 6, price: 40, desc: 'Uma espada simples de ferreiro.' },
-  espada_aco:       { name: 'Espada de Aço', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'incomum', dmg: 10, price: 120, desc: 'Bem forjada, equilibrada.' },
-  espada_runa:      { name: 'Lâmina Rúnica', type: 'weapon', slot: 'weapon', icon: '🗡️', rarity: 'raro', dmg: 15, price: 300, desc: 'Runas brilham ao longo da lâmina.' },
-  lamba_prisma:     { name: 'Lâmina Prisma', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'epico', dmg: 22, price: 700, desc: 'Reflete luz em mil cores.' },
-  lamba_aurora:     { name: 'Lâmina da Aurora', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'lendario', dmg: 32, price: 1500, desc: 'Forjada com a luz do amanhecer.' },
-  corte_estrelas:   { name: 'Corte-Estrelas', type: 'weapon', slot: 'weapon', icon: '🌠', rarity: 'mitico', dmg: 45, price: 3000, desc: 'Dizem que um fragmento de estrela a formou.' },
-  machado_terra:    { name: 'Machado da Montanha', type: 'weapon', slot: 'weapon', icon: '🪓', rarity: 'raro', dmg: 17, price: 320, desc: 'Pesado como uma montanha.' },
+  espada_ferro:     { name: 'Espada de Ferro', type: 'weapon', slot: 'weapon', icon: '🗡️', rarity: 'comum', dmg: 6, price: 40, desc: 'Uma espada simples de ferreiro.', wtype: 'sword' },
+  espada_aco:       { name: 'Espada de Aço', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'incomum', dmg: 10, price: 120, desc: 'Bem forjada, equilibrada.', wtype: 'sword' },
+  espada_runa:      { name: 'Lâmina Rúnica', type: 'weapon', slot: 'weapon', icon: '🗡️', rarity: 'raro', dmg: 15, price: 300, desc: 'Runas brilham ao longo da lâmina.', wtype: 'sword' },
+  lamba_prisma:     { name: 'Lâmina Prisma', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'epico', dmg: 22, price: 700, desc: 'Reflete luz em mil cores.', wtype: 'sword' },
+  lamba_aurora:     { name: 'Lâmina da Aurora', type: 'weapon', slot: 'weapon', icon: '⚔️', rarity: 'lendario', dmg: 32, price: 1500, desc: 'Forjada com a luz do amanhecer.', wtype: 'sword' },
+  corte_estrelas:   { name: 'Corte-Estrelas', type: 'weapon', slot: 'weapon', icon: '🌠', rarity: 'mitico', dmg: 45, price: 3000, desc: 'Dizem que um fragmento de estrela a formou.', wtype: 'sword' },
+  machado_terra:    { name: 'Machado da Montanha', type: 'weapon', slot: 'weapon', icon: '🪓', rarity: 'raro', dmg: 17, price: 320, desc: 'Pesado como uma montanha.', wtype: 'axe' },
+  // armas por classe
+  cajado_aprendiz:  { name: 'Cajado do Aprendiz', type: 'weapon', slot: 'weapon', icon: '🪄', rarity: 'comum', dmg: 3, price: 45, desc: 'Canaliza magia elemental.', wtype: 'staff', mpBonus: 10 },
+  cajado_runa:      { name: 'Cajado Rúnico', type: 'weapon', slot: 'weapon', icon: '🪄', rarity: 'raro', dmg: 6, price: 300, desc: 'Runas de amplificação mágica.', wtype: 'staff', mpBonus: 25, poder: 4 },
+  arco_caca:        { name: 'Arco de Caça', type: 'weapon', slot: 'weapon', icon: '🏹', rarity: 'comum', dmg: 5, price: 45, desc: 'Leve e preciso a distância.', wtype: 'bow', range: 16 },
+  arco_longo:       { name: 'Arco Longo Élfico', type: 'weapon', slot: 'weapon', icon: '🏹', rarity: 'raro', dmg: 11, price: 310, desc: 'Alcance e força élficos.', wtype: 'bow', range: 22, critico: 3 },
+  escudo_madeira:   { name: 'Escudo de Madeira', type: 'weapon', slot: 'offhand', icon: '🛡️', rarity: 'comum', def: 3, price: 35, desc: 'Bloqueia golpes com confiança.', wtype: 'shield' },
+  escudo_aço:       { name: 'Escudo de Aço', type: 'weapon', slot: 'offhand', icon: '🛡️', rarity: 'incomum', def: 6, price: 130, desc: 'Braço firme do guerreiro.', wtype: 'shield' },
   // armaduras
   armadura_couro:   { name: 'Armadura de Couro', type: 'armor', slot: 'armor', icon: '🥋', rarity: 'comum', def: 3, price: 50, desc: 'Proteção leve e barata.' },
   armadura_malha:   { name: 'Cota de Malha', type: 'armor', slot: 'armor', icon: '🛡️', rarity: 'incomum', def: 6, price: 150, desc: 'Anéis de aço entrelaçados.' },

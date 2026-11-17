@@ -13,7 +13,7 @@ const DEFAULT_SAVE = {
   attrPoints: 0,
   element: null,
   spells: {},           // id -> { level, uses }
-  equipment: { weapon: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null },
+  equipment: { weapon: null, offhand: null, armor: null, helmet: null, gloves: null, boots: null, cape: null, accessory: null },
   inventory: [],        // { id, qty }
   // mundo / história
   chapter: 1,
@@ -56,7 +56,7 @@ export function writeSave(state) {
       chapter: state.chapter, storyFlags: state.storyFlags,
       quests: state.quests, discovered: [...state.discovered],
       pos: state.savePos, timeOfDay: state.timeOfDay, playtime: Math.floor(state.playtime),
-      grimoireLevel: state.grimoireLevel,
+      grimoireLevel: state.grimoireLevel, classe: state.classe || null,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     saveSettings();

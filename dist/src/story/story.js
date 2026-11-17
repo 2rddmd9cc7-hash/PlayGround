@@ -6,6 +6,7 @@ import { audio } from '../audio/audio.js';
 import { effects, ELEMENT_COLORS } from '../effects/effects.js';
 import { xpForLevel } from '../ui/hud.js';
 import { wasPressed } from '../core/input.js';
+import { classStatMults } from '../player/classes.js';
 import { rand, clamp } from '../core/utils.js';
 import { terrainHeight } from '../world/terrain.js';
 
@@ -35,6 +36,9 @@ class Story {
   constructor() {
     this.testState = null;     // cinemática do teste
     this.invasionState = null;
+    this.finalState = null;    // arco final (Morgath)
+    this.morgath = null;
+    this._endingClose = null;
     this.tutored = {};
   }
 
@@ -48,6 +52,10 @@ class Story {
       // mundo aberto
       G.quests.offer('main_reinos');
       G.quests.offer('main_dungeon');
+    }
+    // retomar arco final de um save
+    if (G.storyFlags.dungeonDone && !G.storyFlags.gameFinished && !G.quests.doneIds.includes('main_final')) {
+      G.quests.offer('main_final');
     }
     G.hud?.updateAll?.();
   }
@@ -79,9 +87,10 @@ class Story {
   recalcStats() {
     const a = G.attributes;
     const eq = G.equipment;
-    G.maxHp = 80 + a.resistencia * 6 + G.level * 8 + (eq.accessory?.hp || 0);
-    G.maxMp = 40 + a.mana * 5 + G.level * 4;
-    G.maxStamina = 80 + a.resistencia * 4;
+    const cm = classStatMults();
+    G.maxHp = Math.round((80 + a.resistencia * 6 + G.level * 8 + (eq.accessory?.hp || 0)) * cm.hpMult);
+    G.maxMp = Math.round((40 + a.mana * 5 + G.level * 4 + (eq.weapon?.mpBonus || 0)) * cm.mpMult);
+    G.maxStamina = Math.round((80 + a.resistencia * 4) * cm.staminaMult);
     G.hp = Math.min(G.hp + 30, G.maxHp); // cura parcial ao subir de nível
     G.mp = G.maxMp;
     if (G.player) G.player.refreshEquipment?.();
@@ -101,11 +110,35 @@ class Story {
     if (id === 'main_teste') { /* concluída ao interagir com cristal */ }
     if (id === 'main_invasao') {
       G.storyFlags.invasionWon = true;
+      // cadeia secundária: ferreiro preocupado → estrada perigosa
+      G.quests.offer('blacksmith_worry');
+      G.hud?.hint('⚒️ O Ferreiro Doran quer falar com você sobre a defesa da cidade.', 7000);
       this._openWorld();
+    }
+    if (id === 'blacksmith_worry') {
+      G.quests.offer('dangerous_road');
+      G.hud?.hint('⚔️ Nova missão: limpe a estrada dos goblins!', 7000);
     }
     if (id === 'main_dungeon') {
       G.storyFlags.dungeonDone = true;
       G.hud?.toast('🏆 O Rei Goblin caiu! O vale respira aliviado.', true);
+      // arco final desbloqueia
+      if (!G.storyFlags.gameFinished) {
+        G.chapter = Math.max(G.chapter, 6);
+        showChapterTitle('CAPÍTULO 6', 'Os Reinos', 4000);
+        setTimeout(() => {
+          if (G.storyFlags.gameFinished) return;
+          G.quests.offer('main_final');
+          audio.sfx('bell');
+          G.hud?.toast('🌑 Uma sombra antiga desperta nas Montanhas Negras…', true);
+          G.hud?.hint('A verdadeira ameaça aguarda no Pico Umbral, a nordeste. Prepare-se e vá até lá!', 10000);
+        }, 6000);
+      }
+    }
+    if (id === 'main_final') {
+      G.storyFlags.gameFinished = true;
+      G.chapter = 10;
+      this._showEnding();
     }
   }
 
@@ -114,6 +147,10 @@ class Story {
     if (npcId === 'elder' && !G.storyFlags.talkedElder) {
       G.storyFlags.talkedElder = true;
       G.hud?.hint('Siga a estrada ao NORTE até Aurelia. (Use o minimapa!)');
+    }
+    // objetivo "falar com o ferreiro" da cadeia pós-invasão
+    if (npcId === 'blacksmith' && G.quests.activeIds.includes('blacksmith_worry')) {
+      G.quests.onObjectiveFlag('blacksmith_worry', 'talk');
     }
   }
 
@@ -130,9 +167,79 @@ class Story {
     G.grimoire?.appear();
     G.hud?.toast('📖 O Arquimaga entrega o GRIMÓRIO! (tecla G para abrir)', true);
     this.addXp(100);
+    if (G.quests.activeIds.includes('main_grimorio')) G.quests.complete('main_grimorio');
     G.quests.offer('main_reinos');
     G.quests.offer('main_dungeon');
   }
+
+  // ==================== ARCO FINAL: MORGATH ====================
+  updateFinal(dt) {
+    // estado criado sob demanda (oferta da quest ou save carregado)
+    if (!this.finalState) {
+      if (!G.quests.activeIds.includes('main_final')) return;
+      this.finalState = { spawned: false, warned: false };
+    }
+    if (this.finalState.spawned) return;
+    const p = G.player.root.position;
+    const d = Math.hypot(p.x - 330, p.z + 260);
+    // aproximação do Pico Umbral: introdução do boss
+    if (d < 70 && !this.finalState.warned) {
+      this.finalState.warned = true;
+      showChapterTitle('CAPÍTULO 10', 'Batalha Final', 4500);
+      G.hud?.toast('🌑 O ar congela… MORGATH desperta no Pico Umbral!', true);
+      audio.playMusic('boss');
+      audio.sfx('bossRoar');
+      G.camCtl?.shakeIt(1.5);
+    }
+    if (d < 45) {
+      this.finalState.spawned = true;
+      G.quests.onObjectiveFlag('main_final', 'go');
+      const m = G.enemies.spawnBoss('bossMorgath', 330, -268, 'B');
+      m.state = 'chase';
+      m.invasion = true; // nunca é removido por distância
+      this.morgath = m;
+      effects.explosion(330, terrainHeight(330, -268) + 3, -268, 0x5a0a5a, 60, 7);
+      G.hud?.showBoss(m.type.name, 1);
+      G.hud?.hint('⚔️ BOSS FINAL! Ele ataca forte — esquive (espaço), feche a distância e castigue com magia (1-4)!', 12000);
+      this.onBossSeen(m);
+    }
+  }
+
+  _showEnding() {
+    G.hud?.showBoss(null);
+    G.paused = true;
+    audio.playMusic('vila');
+    G.hud?.toast('🏆 MORGATH FOI DERROTADO! Aetheria está livre!', true);
+    const mins = Math.floor(G.playtime / 60);
+    const done = G.quests.doneIds.length;
+    const el = document.createElement('div');
+    el.id = 'ending-screen';
+    el.innerHTML = `
+      <div class="ending-box">
+        <div class="ending-title">FIM</div>
+        <div class="ending-sub">Crônicas de Aetheria</div>
+        <p>A escuridão de Morgath se dissipa sobre as Montanhas Negras. Os reinos celebram o nome do herói de Pedravale — e as suas crônicas, para sempre escritas no Grimório.</p>
+        <div class="ending-stats">
+          <div><span>Nível</span><b>${G.level}</b></div>
+          <div><span>Ouro</span><b>${G.gold}</b></div>
+          <div><span>Missões</span><b>${done}</b></div>
+          <div><span>Elemento</span><b>${G.element ? (ELEMENTS[G.element]?.name || G.element) : '—'}</b></div>
+          <div><span>Tempo</span><b>${mins} min</b></div>
+        </div>
+        <button id="ending-continue">🌍 Continuar explorando Aetheria</button>
+      </div>`;
+    document.body.appendChild(el);
+    const btn = el.querySelector('#ending-continue');
+    const close = () => {
+      el.remove();
+      G.paused = false;
+      G.hud?.hint('O mundo continua aberto! Missões secundárias, dungeons e segredos aguardam.', 8000);
+    };
+    btn.addEventListener('click', close);
+    this._endingClose = close;
+  }
+
+  closeEnding() { this._endingClose?.(); this._endingClose = null; }
 
   // ---------- viagem rápida ----------
   fastTravel(x, z) {

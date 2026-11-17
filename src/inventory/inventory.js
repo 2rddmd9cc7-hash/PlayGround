@@ -13,9 +13,7 @@ class Inventory {
   init() {
     if (G.inventory_list.length === 0) {
       G.inventory_list.push({ id: 'pocao_vida', qty: 2 });
-      G.inventory_list.push({ id: 'espada_ferro', qty: 1 });
-      G.equipment.weapon = { id: 'espada_ferro', ...itemById('espada_ferro') };
-      G.inventory_list = G.inventory_list.filter(i => i.id !== 'espada_ferro');
+      // armas começam NO INVENTÁRIO (guardadas), entregues pela escolha de classe
     }
   }
 

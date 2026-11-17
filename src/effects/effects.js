@@ -143,6 +143,20 @@ class Effects {
     this.particles.burst(x, y, z, n, { r: c.r, g: c.g, b: c.b, spread: 3, up: 1, life: 0.55, size, grav: 4, drag: 0.9 });
     this.flashSphere(x, y, z, size * 2.4, colorHex, 0.25, 0.5);
   }
+  // arco de golpe (espada/clava) — cresce e desvanece na frente do atacante
+  slash(x, y, z, yaw, colorHex = 0xcfd8e2, size = 1.1) {
+    const geo = new THREE.TorusGeometry(1, 0.08, 4, 16, Math.PI * 0.85);
+    const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = yaw;                       // aponta o arco na direção do golpe
+    mesh.rotation.z = -Math.PI * 0.42;           // arco vertical
+    mesh.scale.setScalar(size * 0.4);
+    mesh.renderOrder = 6;
+    this.scene.add(mesh);
+    this.tempMeshes.push({ mesh, life: 0.22, maxLife: 0.22, radius: size, opacity: 0.85, slash: true });
+    return mesh;
+  }
   explosion(x, y, z, colorHex, n = 40, radius = 3) {
     const c = new THREE.Color(colorHex);
     this.particles.burst(x, y, z, n, { r: c.r, g: c.g, b: c.b, spread: 6, up: 2, life: 0.9, size: 0.6, grav: 3, drag: 0.88 });
@@ -161,6 +175,13 @@ class Effects {
         continue;
       }
       const f = t.life / t.maxLife;
+      if (t.slash) {
+        // arco de golpe: gira no eixo e cresce rápido
+        t.mesh.scale.setScalar(t.radius * (0.4 + 0.9 * (1 - f)));
+        t.mesh.rotation.x = (1 - f) * 1.6;
+        t.mesh.material.opacity = t.opacity * f * f;
+        continue;
+      }
       t.mesh.scale.setScalar(t.radius * (0.35 + 0.75 * (1 - f) + 0.25 * f));
       t.mesh.material.opacity = t.opacity * f;
     }

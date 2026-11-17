@@ -81,6 +81,8 @@ class AudioSys {
     try {
       switch (name) {
         case 'swing': this.noise(0, { dur: 0.14, freq: 2600, slide: 0.3, vol: 0.16, q: 2 }); break;
+        case 'bow': this.noise(0, { dur: 0.12, freq: 1800, slide: 1.8, vol: 0.18, q: 1.2 }); this.tone(0.02, { freq: 900, dur: 0.1, type: 'sine', vol: 0.08, slide: 2.2 }); break;
+        case 'bowHeavy': this.noise(0, { dur: 0.2, freq: 1200, slide: 1.4, vol: 0.24, q: 1 }); this.tone(0.03, { freq: 600, dur: 0.16, type: 'triangle', vol: 0.12, slide: 2 }); break;
         case 'hit': this.noise(0, { dur: 0.12, freq: 500, q: 0.7, vol: 0.35 }); this.tone(0, { freq: 160, dur: 0.12, type: 'square', vol: 0.12, slide: 0.4 }); break;
         case 'crit': this.noise(0, { dur: 0.18, freq: 700, q: 0.6, vol: 0.4 }); this.tone(0, { freq: 660, dur: 0.15, type: 'triangle', vol: 0.2, slide: 0.3 }); break;
         case 'hurt': this.tone(0, { freq: 220, dur: 0.2, type: 'sawtooth', vol: 0.16, slide: 0.5 }); break;

@@ -355,6 +355,9 @@ export class World {
       this.addCollider(C.x - 24 + i * 14, C.z + 34, 2.2);
     }
 
+    // ---- povoamento: carroças, bancos, barris, caixas, postes, cercas ----
+    this._populateCity(scene, C);
+
     // castelo (fundo norte da cidade)
     const K = { x: C.x, z: C.z - 52 };
     const keep = new THREE.Group();
@@ -451,6 +454,45 @@ export class World {
     P.placeAt(citySign, C.x + 10, C.z + R + 4);
     scene.add(citySign);
     this.addInteract({ type: 'sign', x: C.x + 10, z: C.z + R + 4, y: H(C.x + 10, C.z + R + 4), label: 'Ler placa', data: { text: 'AURELIA — Cidade Real\n"Que a luz dos Seis guie seus passos."' } });
+  }
+
+  // ---- mobiliário urbano: carroças, bancos, barris, caixas, postes de tocha ----
+  _populateCity(scene, C) {
+    const H = (x, z) => terrainHeight(x, z);
+    const placed = [];
+    const put = (mesh, x, z, rot = 0, collR = 0) => {
+      // evita sobrepor outro prop da mesma zona
+      for (const p of placed) if (Math.hypot(p.x - x, p.z - z) < 3.5) return;
+      P.placeAt(mesh, x, z, rot);
+      scene.add(mesh);
+      placed.push({ x, z });
+      if (collR > 0) this.addCollider(x, z, collR);
+    };
+    // postes de tocha ao longo da rua central (sul → castelo) e do mercado
+    for (const [lx, lz] of [[-8, -190], [8, -190], [-8, -216], [8, -216], [-8, -244], [8, -244], [-8, -272], [8, -272], [-30, -232], [26, -232]]) {
+      const lp = P.makeLampPost();
+      put(lp, lx, lz, 0, 0.4);
+      this.torchFlames.push({ flame: lp.userData.flame, light: null, x: lx, z: lz });
+    }
+    // bancos na praça central e perto da fonte do mercado
+    for (const [bx, bz, br] of [[-4, -252, 0.5], [4, -252, -0.5], [0, -266, Math.PI], [-20, -230, 0.2], [12, -230, -0.2]]) {
+      put(P.makeBench(), bx, bz, br);
+    }
+    // barris e caixas junto às bancas e tavernas
+    const barrels = [[-22, -229], [-16, -224], [2, -229], [8, -224], [20, -229], [-42, -248], [46, -250], [-28, -266], [32, -268]];
+    for (const [bx, bz] of barrels) put(P.makeBarrel(), bx, bz, rand(0, 3), 0.5);
+    const crates = [[-19, -226], [5, -226], [22, -226], [-38, -246], [44, -246], [-26, -262], [28, -264], [-12, -196], [12, -196]];
+    for (const [cx2, cz2] of crates) put(P.makeCrate(), cx2, cz2, rand(0, 3), 0.6);
+    // carroças estacionadas: perto do portão e das ruas laterais
+    const carts = [[-14, -186, 0.4], [14, -186, -0.4], [-38, -226, 1.2], [36, -262, -0.9], [-6, -262, 0.1]];
+    for (const [cx3, cz3, cr] of carts) put(P.makeCart(), cx3, cz3, cr, 1.4);
+    // cercas decorativas nos jardins das casas da borda
+    const fences = [[-52, -238, 0], [52, -238, 0], [-52, -274, 0], [52, -274, 0], [-48, -256, Math.PI / 2], [48, -256, Math.PI / 2]];
+    for (const [fx, fz, fr] of fences) {
+      const f = P.makeFence(7);
+      P.placeAt(f, fx, fz, fr);
+      scene.add(f);
+    }
   }
 
   // ============ FLORESTA ============

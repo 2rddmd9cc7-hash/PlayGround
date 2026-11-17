@@ -15,12 +15,27 @@ const MAT = {
   metal: new THREE.MeshLambertMaterial({ color: 0x8a8f94 }),
   wood: new THREE.MeshLambertMaterial({ color: 0x6b4423 }),
   eye: new THREE.MeshBasicMaterial({ color: 0xffd23a }),
+  eyeRed: new THREE.MeshBasicMaterial({ color: 0xff4830 }),
+  eyeViolet: new THREE.MeshBasicMaterial({ color: 0xc46aff }),
+  teeth: new THREE.MeshBasicMaterial({ color: 0xf2ead8 }),
+  brow: new THREE.MeshLambertMaterial({ color: 0x2a3a14 }),
+  loincloth: new THREE.MeshLambertMaterial({ color: 0x5a4630, side: THREE.DoubleSide }),
   ice: new THREE.MeshLambertMaterial({ color: 0x8cd9ff, emissive: 0x1a4a6a, transparent: true, opacity: 0.9 }),
   fire: new THREE.MeshLambertMaterial({ color: 0xff5a1a, emissive: 0x8a2a00, flatShading: true }),
   rock: new THREE.MeshLambertMaterial({ color: 0x7a6a55, flatShading: true }),
   shadow: new THREE.MeshLambertMaterial({ color: 0x1a1024, emissive: 0x3a0a3a, emissiveIntensity: 0.6, flatShading: true }),
   shadowEye: new THREE.MeshBasicMaterial({ color: 0xff2a6a }),
 };
+
+// variação de cor de pele por tipo de goblin
+function goblinSkin(typeId) {
+  if (typeId === 'goblinMago') return 0x6a5a8a;      // arcano roxo
+  if (typeId === 'goblinCapitao') return 0x4a7a2a;   // verde escuro
+  if (typeId === 'goblinElite') return 0x3a6a20;     // verde militar
+  if (typeId === 'bossUgluk' || typeId === 'bossGoblinKing') return 0x6a3a2a; // marrom do boss
+  if (typeId === 'goblinArqueiro') return 0x7a9a3a;  // verde pálido
+  return 0x5a8a3a;                                   // verde padrão
+}
 
 export const RANKS = {
   E:  { hp: 1.0,  dmg: 1.0,  spd: 1.0,  reward: 1.0,  ai: 0 },
@@ -47,35 +62,53 @@ export const ENEMY_TYPES = {
   bossMorgath:     { name: 'Morgath, o Devorador de Reinos', base: 'terra', hp: 1100, dmg: 34, speed: 4.8, xp: 1500, melee: true, scale: 3.0, armor: 14, boss: true, dark: true },
 };
 
-function buildGoblin(type) {
+function buildGoblin(type, typeId) {
   const g = new THREE.Group();
   const s = type.scale || 1;
+  // pele com tom por tipo (material próprio do inimigo)
+  const skinMat = new THREE.MeshLambertMaterial({ color: goblinSkin(typeId) });
+  const skinDarkMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(goblinSkin(typeId)).multiplyScalar(0.72) });
   // corpo
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.34), MAT.skin);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.34), skinMat);
   torso.position.y = 0.75; torso.castShadow = true; g.add(torso);
-  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), MAT.skinDark);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), skinDarkMat);
   belly.position.set(0, 0.62, 0.06); belly.scale.set(1, 0.8, 0.8); g.add(belly);
+  // tanga (roupa)
+  const loincloth = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.32), MAT.loincloth);
+  loincloth.position.set(0, 0.5, 0.18); g.add(loincloth);
+  const loinclothBack = loincloth.clone(); loinclothBack.position.z = -0.18; g.add(loinclothBack);
   // cabeça com orelhas
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), MAT.skin);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), skinMat);
   head.position.y = 1.25; head.scale.set(1, 0.9, 0.95); head.castShadow = true; g.add(head);
   for (const side of [-1, 1]) {
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.3, 4), MAT.skin);
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.3, 4), skinMat);
     ear.position.set(side * 0.24, 1.3, -0.02);
     ear.rotation.z = side * -1.9;
     g.add(ear);
   }
+  // olhos: amarelo padrão, vermelho para elites/boss, violeta para o mago
+  const eyeMat = (type.boss || type.armor >= 6) ? MAT.eyeRed : (type.caster ? MAT.eyeViolet : MAT.eye);
   for (const sx of [-0.09, 0.09]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), MAT.eye);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), eyeMat);
     eye.position.set(sx, 1.27, 0.2); g.add(eye);
+  }
+  // rosto: sobrancelhas bravas + presas
+  for (const sx of [-0.09, 0.09]) {
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.03), MAT.brow);
+    brow.position.set(sx, 1.34, 0.2); brow.rotation.z = sx > 0 ? -0.5 : 0.5; g.add(brow);
+  }
+  for (const sx of [-0.05, 0.05]) {
+    const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.07, 4), MAT.teeth);
+    tooth.position.set(sx, 1.1, 0.2); tooth.rotation.x = Math.PI; g.add(tooth);
   }
   // braços
   const arms = [];
   for (const side of [-1, 1]) {
     const sh = new THREE.Group(); sh.position.set(side * 0.3, 1.05, 0); g.add(sh);
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.32, 0.13), MAT.skin);
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.32, 0.13), skinMat);
     upper.position.y = -0.16; sh.add(upper);
     const elbow = new THREE.Group(); elbow.position.y = -0.32; sh.add(elbow);
-    const fore = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.28, 0.11), MAT.skin);
+    const fore = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.28, 0.11), skinMat);
     fore.position.y = -0.14; elbow.add(fore);
     arms.push({ sh, elbow, side });
   }
@@ -83,10 +116,10 @@ function buildGoblin(type) {
   const legs = [];
   for (const side of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(side * 0.14, 0.5, 0); g.add(hip);
-    const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.16), MAT.skinDark);
+    const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.16), skinDarkMat);
     thigh.position.y = -0.15; hip.add(thigh);
     const knee = new THREE.Group(); knee.position.y = -0.3; hip.add(knee);
-    const shin = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), MAT.skinDark);
+    const shin = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), skinDarkMat);
     shin.position.y = -0.14; knee.add(shin);
     legs.push({ hip, knee });
   }
@@ -167,7 +200,7 @@ class Enemy {
     this.type = ENEMY_TYPES[typeId];
     this.rank = rank || 'E';
     this.root = new THREE.Group();
-    const built = buildGoblin(this.type);
+    const built = buildGoblin(this.type, typeId);
     this.body = built.group;
     this.arms = built.arms;
     this.legs = built.legs;
@@ -395,6 +428,7 @@ class Enemy {
         }
       }
       audio.sfx('swing');
+      effects.slash(this.root.position.x, this.root.position.y + 0.9 * (this.type.scale || 1), this.root.position.z, dir, this.boss ? 0xff6a33 : 0xffb066, 0.8 + (this.type.scale || 1) * 0.35);
       effects.particles.burst(this.root.position.x + Math.sin(dir) * 1, this.root.position.y + 1, this.root.position.z + Math.cos(dir) * 1, 6, { r: 1, g: 0.85, b: 0.6, spread: 1.4, life: 0.3, size: 0.3 });
       if (this.boss) {
         // onda de choque

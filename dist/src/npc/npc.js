@@ -35,9 +35,24 @@ export const NPC_DEFS = [
   { id: 'innkeeper', name: 'Taverneiro Guss', role: 'Taverneiro', outfit: 'taverneiro', home: { x: -24, z: -16 }, work: { x: -22, z: -12 }, dialog: 'innkeeper' },
   { id: 'priest', name: 'Sacerdotisa Mirena', role: 'Sacerdotisa', outfit: 'sacerdote', home: { x: 4, z: -30 }, work: { x: 4, z: -26 }, dialog: 'priest' },
   { id: 'farmer', name: 'Fazendeiro Tom', role: 'Fazendeiro', outfit: 'fazendeiro', home: { x: -34, z: 20 }, work: { x: -34, z: 20 }, dialog: 'farmer' },
-  { id: 'guard1', name: 'Guarda Fenwick', role: 'Guarda', outfit: 'guarda', home: { x: 16, z: -10 }, work: { x: 0, z: -34 }, dialog: 'guard', patrol: true },
+  { id: 'guard1', name: 'Guarda Fenwick', role: 'Guarda da Vila', outfit: 'guarda', home: { x: 16, z: -10 }, work: { x: 0, z: -34 }, dialog: 'guard',
+    route: [{ x: 0, z: -34 }, { x: -12, z: -18 }, { x: 0, z: 6 }, { x: 12, z: -18 }], nightPatrol: true },
   { id: 'child1', name: 'Pip', role: 'Criança', outfit: 'crianca', home: { x: 4, z: 22 }, work: { x: 6, z: 8 }, dialog: 'child', run: true },
   { id: 'child2', name: 'Nima', role: 'Criança', outfit: 'crianca', home: { x: 18, z: 12 }, work: { x: 8, z: 9 }, dialog: 'child2', run: true },
+  // ---- Cidade de Aurelia (z ≈ -172 a -312) ----
+  { id: 'herbalist', name: 'Herbalista Rosa', role: 'Vendedora de Poções', outfit: 'aldeia', home: { x: -34, z: -244 }, work: { x: -14, z: -228 }, dialog: 'herbalist', shop: 'potions' },
+  { id: 'armorer', name: 'Armeira Saga', role: 'Armeira', outfit: 'ferreiro', home: { x: 40, z: -244 }, work: { x: 24, z: -228 }, dialog: 'armorer', shop: 'weapons' },
+  { id: 'bowsmith', name: 'Flecheiro Idrin', role: 'Flecheiro', outfit: 'comerciante', home: { x: -44, z: -276 }, work: { x: -26, z: -262 }, dialog: 'bowsmith', shop: 'bows' },
+  { id: 'guard2', name: 'Guarda Aldo', role: 'Guarda do Portão', outfit: 'guarda', home: { x: 10, z: -200 }, work: { x: 0, z: -178 }, dialog: 'guard2',
+    route: [{ x: 0, z: -178 }, { x: -6, z: -196 }, { x: 0, z: -212 }, { x: 6, z: -196 }], nightPatrol: true },
+  { id: 'patrol1', name: 'Soldado Bregan', role: 'Patrulha Real', outfit: 'soldado', home: { x: -20, z: -296 }, work: { x: 0, z: -262 }, dialog: 'patrol',
+    route: [{ x: 0, z: -262 }, { x: -26, z: -248 }, { x: -34, z: -268 }, { x: -12, z: -284 }, { x: 0, z: -290 }], nightPatrol: true },
+  { id: 'patrol2', name: 'Soldada Yvonne', role: 'Patrulha Real', outfit: 'soldado', home: { x: 22, z: -298 }, work: { x: 14, z: -246 }, dialog: 'patrol',
+    route: [{ x: 14, z: -246 }, { x: 30, z: -232 }, { x: 40, z: -252 }, { x: 26, z: -276 }, { x: 8, z: -288 }], nightPatrol: true },
+  { id: 'villager3', name: 'Dona Petra', role: 'Moradora', outfit: 'aldeia', home: { x: -46, z: -238 }, work: { x: -20, z: -244 }, dialog: 'villager3',
+    route: [{ x: -20, z: -244 }, { x: -30, z: -228 }, { x: -8, z: -236 }, { x: -20, z: -258 }] },
+  { id: 'villager4', name: 'Velho Marek', role: 'Morador', outfit: 'aldeao', home: { x: 44, z: -272 }, work: { x: 22, z: -258 }, dialog: 'villager4',
+    route: [{ x: 22, z: -258 }, { x: 34, z: -242 }, { x: 14, z: -238 }, { x: 26, z: -266 }] },
   { id: 'archmage', name: 'Arquimaga Selenar', role: 'Arquimaga do Reino', outfit: 'mago', home: { x: 0, z: -312 }, work: { x: 0, z: -306 }, dialog: 'archmage', castle: true },
   { id: 'captain', name: 'Capitão Aldric', role: 'Capitão da Guarda', outfit: 'soldado', home: { x: -40, z: 30 }, work: { x: 0, z: -270 }, dialog: 'captain', castle: true },
   { id: 'candidate1', name: 'Candidato Rove', role: 'Candidato ao Teste', outfit: 'aldeao', home: { x: -6, z: -290 }, work: { x: -6, z: -290 }, dialog: 'candidate', castle: true, static: true },
@@ -125,10 +140,25 @@ class NPC {
     this.dlgIdx = 0;
   }
 
-  // rotina: dia → trabalho; noite → casa
+  // rotina: dia → trabalho/rota; noite → casa
   updateRoutine(hour) {
     const night = hour < 6.5 || hour > 19.5;
-    const dest = night ? this.house : this.work;
+    if (night && !this.def.nightPatrol) {
+      const dest = this.house;
+      this.moving = dist2d(this.root.position.x, this.root.position.z, dest.x, dest.z) > 1.6;
+      this.destX = dest.x; this.destZ = dest.z;
+      return;
+    }
+    // rota de patrulha: cicla pelos pontos de interesse (Casa → praça → mercado → …)
+    if (this.def.route) {
+      if (this.routeIdx === undefined) this.routeIdx = 0;
+      const wp = this.def.route[this.routeIdx % this.def.route.length];
+      const d = dist2d(this.root.position.x, this.root.position.z, wp.x, wp.z);
+      this.moving = d > 1.4;
+      this.destX = wp.x; this.destZ = wp.z;
+      return;
+    }
+    const dest = this.work;
     this.moving = dist2d(this.root.position.x, this.root.position.z, dest.x, dest.z) > 1.6;
     this.destX = dest.x; this.destZ = dest.z;
     if (night && G.storyFlags.invasion && !this.def.castle) this.fleeing = true;
@@ -149,6 +179,8 @@ class NPC {
       }
     } else if (this.moving && this.destX !== undefined) {
       speed = this._step(this.destX, this.destZ, dt, this.def.run ? this.speed * 1.4 : this.speed);
+      // rota: chegou ao ponto → começa a pausa antes do próximo destino
+      if (this.def.route && speed === 0) this.routeWait = (this.routeWait ?? rand(3, 7));
     }
     // vagar
     if (this.def.wander && !this.moving) {
@@ -160,6 +192,14 @@ class NPC {
         this._wz = this.work.z + Math.sin(a) * d;
       }
       if (this._wx !== undefined) speed = Math.max(speed, this._step(this._wx, this._wz, dt, this.speed * 0.6));
+    }
+    // rota: pausa no ponto de interesse e avança para o próximo
+    if (this.def.route && !this.moving && !this.fleeing && speed === 0 && this.routeWait !== undefined) {
+      this.routeWait -= dt;
+      if (this.routeWait <= 0) {
+        this.routeWait = undefined;
+        this.routeIdx = (this.routeIdx + 1) % this.def.route.length;
+      }
     }
     // animação
     const parts = this.root.userData.parts;

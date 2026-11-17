@@ -4,6 +4,7 @@ import { G } from '../core/state.js';
 import { settings, saveSettings } from '../core/config.js';
 import { ELEMENTS, getSpellDef, allSpellDefs } from '../magic/elements.js';
 import { itemById, RARITIES, ITEMS } from '../items/items.js';
+import { CLASSES, applyClass } from '../player/classes.js';
 import { xpForLevel } from './hud.js';
 import { audio } from '../audio/audio.js';
 import { REGIONS } from '../world/world.js';
@@ -59,6 +60,33 @@ const PANELS = {
   ],
   farmer: [
     { name: 'Fazendeiro Tom', text: 'A terra não engana quem cuida dela. Cultive com paciência e ela retribuirá.' },
+  ],
+  herbalist: [
+    { name: 'Herbalista Rosa', text: 'Ervas frescas, poções borbulhando… entre, entre! Ninguém sai daqui sem um anti-veneno no bolso.' },
+    { name: 'Herbalista Rosa', text: 'Goblins deixaram de ser inofensivos ultimamente. Leve uma poção de vida, por precaução.' },
+  ],
+  armorer: [
+    { name: 'Armeira Saga', text: 'Aço batido, couro curtido. Vista-se bem para a guerra, ou para o que a guerra faz com você.' },
+    { name: 'Armeira Saga', text: 'Minha banca é a melhor da cidade. Os cavaleiros do castelo compram de mim, e não é por caridade.' },
+  ],
+  bowsmith: [
+    { name: 'Flecheiro Idrin', text: 'Freixo e tendão, silêncio e precisão. Um arco bom fala pouco e acerta muito.' },
+    { name: 'Flecheiro Idrin', text: 'Estou fazendo fletching para os arqueiros do castelo. Se quiser um arco, é só perguntar.' },
+  ],
+  guard2: [
+    { name: 'Guarda Aldo', text: 'Portão sob vigilância. Estranhos entram, goblins não. Regra simples.' },
+    { name: 'Guarda Aldo', text: 'Ouvi passos na estrada à noite. Se for sair, vá armado.' },
+  ],
+  patrol: [
+    { name: 'Patrulha Real', text: 'Em nome da Rainha, mantenha a ordem. A cidade agradece sua presença, aventureiro.' },
+    { name: 'Patrulha Real', text: 'O castelo fica ao norte. Se as sirenes tocarem, corra para dentro das muralhas.' },
+  ],
+  villager3: [
+    { name: 'Dona Petra', text: 'Compro na banca, falo com as vizinhas, volto para casa. Uma rotina honesta mantém a cabeça no lugar.' },
+    { name: 'Dona Petra', text: 'Dizem que a floresta a leste está infestada. Eu não ponho os pés lá nem por ouro.' },
+  ],
+  villager4: [
+    { name: 'Velho Marek', text: 'Nesta cidade há trinta anos e nunca vi muralhas tão silenciosas à noite. Sinal de que algo se move lá fora.' },
   ],
   guard: [
     { name: 'Guarda Fenwick', text: 'Mantenha os olhos abertos. A noite traz coisas que o dia esconde.' },
@@ -173,6 +201,7 @@ class Panels {
     }
     // mostra falas + tela de escolhas
     this._pendingNpc = { npc, choices, onEnd: () => { npc.talkedTo = true; G.story?.onTalkTo?.(npc.def.id); } };
+    this._lastShopNpc = npc.def.shop || 'general';
     this.startDialog(withChoices, npc, () => {
       const el = openModal(`
         <div class="dialog-name">${npc.name}</div>
@@ -193,7 +222,7 @@ class Panels {
 
   _handleChoice(action) {
     switch (action) {
-      case 'shop': this.openShop(); break;
+      case 'shop': this.openShop(this._pendingNpc?.npc?.def?.shop || this._lastShopNpc || 'general'); break;
       case 'quest_teste': G.quests.offer('main_teste'); G.hud?.hint('Missão aceita: vá ao castelo de Aurelia ao norte!'); break;
       case 'quest_herbs':
         if (G.inventory.count('erva') >= 3) {
@@ -212,11 +241,20 @@ class Panels {
   }
 
   // ---------- loja ----------
-  openShop() {
-    const stock = ['pocao_vida', 'pocao_mana', 'espada_aco', 'armadura_malha', 'capacete_couro', 'luvas_couro', 'botas_viajante', 'pergaminho_energia', 'amuleto_poder'];
+  // estoque por tipo de comerciante: ferreiro (armas), geral, poções
+  openShop(kind = 'general') {
+    const STOCKS = {
+      weapons: ['espada_aco', 'machado_terra', 'escudo_madeira', 'escudo_aço', 'armadura_malha', 'capacete_couro', 'luvas_couro', 'botas_viajante'],
+      general: ['pocao_vida', 'pocao_mana', 'pergaminho_energia', 'amuleto_poder', 'luvas_couro', 'botas_viajante', 'capa_viajante', 'anel_sabio'],
+      potions: ['pocao_vida', 'pocao_mana', 'pocao_elixir', 'pergaminho_energia'],
+      staffs: ['cajado_aprendiz', 'cajado_runa', 'pocao_mana', 'pocao_elixir'],
+      bows: ['arco_caca', 'arco_longo', 'botas_vento', 'pocao_vida'],
+    };
+    const stock = STOCKS[kind] || STOCKS.general;
     const buyStock = G.chapter >= 4 ? [...stock, 'espada_runa', 'pocao_elixir', 'armadura_placas', 'botas_vento', 'capacete_aço'] : stock;
+    const titles = { weapons: '⚒️ FERREIRO', potions: '⚗️ ERVANÁRIO', staffs: '🪄 ARCANISTA', bows: '🏹 ARQUEIRO', general: '🛒 LOJA' };
     let el = openModal(`
-      <h2>🛒 LOJA</h2>
+      <h2>${titles[kind] || titles.general}</h2>
       <p style="text-align:center;color:var(--text-dim)">Ouro: <b style="color:var(--gold)" id="shop-gold">${G.gold}</b> 🪙</p>
       <div id="shop-list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px">
         ${buyStock.map(id => {
@@ -288,7 +326,7 @@ class Panels {
       if (grid.children.length === 0) grid.innerHTML = '<div style="color:var(--text-dim);font-size:13px;grid-column:span 8">Vazio.</div>';
       // equipamentos
       const eqList = el.querySelector('#eq-list');
-      const slots = ['weapon', 'armor', 'helmet', 'gloves', 'boots', 'cape', 'accessory'];
+      const slots = ['weapon', 'offhand', 'armor', 'helmet', 'gloves', 'boots', 'cape', 'accessory'];
       eqList.innerHTML = slots.map(s => {
         const cur = G.equipment[s];
         return `<button data-uneq="${s}" style="padding:6px 10px;background:#171009;border:1px solid #3a2c18;color:var(--text);border-radius:6px;font-size:12px">
@@ -472,6 +510,55 @@ class Panels {
         }
       }
     };
+  }
+
+  // ---------- seleção de classe (novo jogo) ----------
+  openClassSelect(onEnd = null) {
+    const cards = Object.values(CLASSES).map(c => `
+      <div class="class-card" data-classe="${c.id}" style="cursor:pointer;padding:18px 20px;background:rgba(255,255,255,.04);border:2px solid var(--panel-border);border-radius:14px;text-align:left">
+        <div style="font-size:44px;text-align:center">${c.icon}</div>
+        <div style="font-size:22px;color:var(--gold);text-align:center;letter-spacing:.1em">${c.name}</div>
+        <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-bottom:10px">${c.tagline}</div>
+        <p style="font-size:13px;line-height:1.5;margin:0 0 10px">${c.desc}</p>
+        <div style="font-size:12px;color:#8fd4ff">${c.perks.map(p => `• ${p}`).join('<br>')}</div>
+      </div>`).join('');
+    const el = openModal(`
+      <h2 style="text-align:center">⚔️ ESCOLHA SUA CLASSE</h2>
+      <p style="text-align:center;color:var(--text-dim);font-size:13px;margin-top:-6px">Seu equipamento inicial virá guardado — equipe-o para lutar.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px">${cards}</div>
+    `, 'wide');
+    el.querySelectorAll('.class-card').forEach(card => {
+      card.onmouseenter = () => { card.style.borderColor = 'var(--gold)'; audio.sfx('pageFlip'); };
+      card.onmouseleave = () => { card.style.borderColor = 'var(--panel-border)'; };
+      card.onclick = () => {
+        const id = card.dataset.classe;
+        const c = applyClass(id);
+        closeModal();
+        G.story.recalcStats();
+        G.hp = G.maxHp; G.mp = G.maxMp; G.stamina = G.maxStamina;
+        G.hud?.updateAll?.();
+        const wt = c.items[0];
+        G.hud?.hint(`${c.icon} ${c.name}: você recebeu ${c.items.length} itens no inventário (tecla I). Eles estão GUARDADOS — abra o inventário ou ataque para sacar a arma.`, 11000);
+        // equipa automaticamente o armamento da classe após 1.5s (animação de pegar arma)
+        setTimeout(() => {
+          if (G.classe !== id) return;
+          for (const it of c.items) {
+            const def = itemById(it);
+            if (def && ['weapon', 'offhand', 'armor', 'helmet', 'cape'].includes(def.slot) && !G.equipment[def.slot]) {
+              G.inventory_list = G.inventory_list.filter(x => x.id !== it);
+              G.equipment[def.slot] = { id: it, ...def };
+            }
+          }
+          G.player?.refreshEquipment?.();
+          G.player?.drawWeapon();
+          G.hud?.toast(`${c.icon} Equipamento vestido! ${c.name} pronto para o combate.`, true);
+          G.story.recalcStats();
+          G.hp = G.maxHp; G.mp = G.maxMp;
+          G.hud?.updateAll?.();
+          onEnd?.();
+        }, 2500);
+      };
+    });
   }
 
   // ---------- pausa / settings ----------
