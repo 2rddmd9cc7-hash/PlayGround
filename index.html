@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <title>Crônicas de Aetheria</title>
+  <link rel="stylesheet" href="game.css" />
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="vitals">
+      <div class="bar hp"><div class="fill" id="hp-fill"></div><span id="hp-text">100/100</span></div>
+      <div class="bar mp"><div class="fill" id="mp-fill"></div><span id="mp-text">60/60</span></div>
+      <div class="bar st"><div class="fill" id="st-fill"></div><span id="st-text">100/100</span></div>
+      <div class="bar xp"><div class="fill" id="xp-fill"></div></div>
+      <div id="level-chip">Nv <b id="level-num">1</b></div>
+      <div id="element-chip" class="hidden"><span id="element-icon"></span><span id="element-name"></span></div>
+    </div>
+    <div id="quest-tracker" class="hidden">
+      <div id="quest-title"></div>
+      <div id="quest-obj"></div>
+      <div id="quest-dist"></div>
+    </div>
+    <div id="gold-chip">◈ <span id="gold-num">0</span></div>
+    <div id="clock-chip">☀ <span id="clock-num">08:30</span> · <span id="region-name"></span></div>
+    <canvas id="minimap" width="148" height="148"></canvas>
+    <div id="crosshair"></div>
+    <div id="target-plate" class="hidden"><div id="target-name"></div><div class="bar thp"><div class="fill" id="target-hp"></div></div><div id="target-rank"></div></div>
+    <div id="boss-plate" class="hidden"><div id="boss-name"></div><div class="bar thp boss"><div class="fill" id="boss-hp"></div></div></div>
+    <div id="hotbar"></div>
+    <div id="hint-bar" class="hidden"></div>
+  </div>
+
+  <div id="banner" class="hidden"><div id="banner-small"></div><div id="banner-big"></div><div id="banner-sub"></div></div>
+  <div id="toasts"></div>
+  <div id="dialog" class="hidden"><div id="dialog-name"></div><div id="dialog-text"></div><div id="dialog-next">[E] continuar ▸</div></div>
+
+  <!-- Menus / overlays gerados por JS -->
+  <div id="menu-root"></div>
+  <div id="touch-ui" class="hidden"></div>
+
+  <div id="loading">
+    <div class="load-mark">✦</div>
+    <h1>CRÔNICAS DE AETHERIA</h1>
+    <p id="load-msg">Forjando o mundo…</p>
+    <div class="load-bar"><div id="load-fill"></div></div>
+  </div>
+
+  <div id="err-screen" class="hidden">
+    <div class="err-card">
+      <h2>Algo deu errado</h2>
+      <p id="err-msg"></p>
+      <p class="err-hint">Tente recarregar a página. Se o problema persistir, verifique se o navegador suporta WebGL.</p>
+      <button id="err-reload">Recarregar</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
