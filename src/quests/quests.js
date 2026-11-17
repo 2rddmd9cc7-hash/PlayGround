@@ -33,6 +33,15 @@ export const QUEST_DEFS = {
     objectives: [{ id: 'explore', text: 'Descubra regiões (0/4)', count: 4, target: 'discover' }],
     rewards: { xp: 200, gold: 100 },
   },
+  main_final: {
+    id: 'main_final', title: 'A Ameaça Final', type: 'principal', chapter: 6,
+    desc: 'A sombra por trás dos goblins se revela: Morgath, o Devorador de Reinos, aguarda no Pico Umbral, nas Montanhas Negras (nordeste). Acabe com ele… ou Aetheria jamais conhecerá a paz.',
+    objectives: [
+      { id: 'go', text: 'Suba o Pico Umbral (nordeste, montanhas)', x: 330, z: -260 },
+      { id: 'boss', text: 'Derrote Morgath (0/1)', count: 1, target: 'kill', boss: true },
+    ],
+    rewards: { xp: 800, gold: 500 },
+  },
   main_dungeon: {
     id: 'main_dungeon', title: 'A Masmorra Sussurrante', type: 'dungeon', chapter: 4,
     desc: 'Uma caverna a leste esconde o covil do Rei Goblin. Investigue e derrote-o.',

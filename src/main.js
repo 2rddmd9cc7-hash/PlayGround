@@ -533,6 +533,8 @@ class Game {
 
       // invasão
       G.story.updateInvasion(dt);
+      // arco final: spaw de Morgath por proximidade
+      G.story.updateFinal(dt);
 
       // stamina regen natural extra
       // (já feita no player)
