@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crônicas de Aetheria — RPG 3D</title>
+<link rel="stylesheet" href="src/ui/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+</head>
+<body>
+  <!-- Tela de erro amigável -->
+  <div id="error-screen" class="hidden">
+    <div class="error-box">
+      <div class="error-icon">⚠️</div>
+      <h1>Algo deu errado</h1>
+      <p id="error-message">Ocorreu um problema inesperado.</p>
+      <p class="error-detail" id="error-detail"></p>
+      <button id="error-reload">🔁 Tentar novamente</button>
+    </div>
+  </div>
+
+  <!-- Tela de carregamento -->
+  <div id="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-sigil">✦</div>
+      <h1>CRÔNICAS DE AETHERIA</h1>
+      <div class="loading-bar"><div id="loading-fill"></div></div>
+      <p id="loading-text">Despertando o mundo…</p>
+    </div>
+  </div>
+
+  <!-- Menu principal -->
+  <div id="menu-screen" class="hidden">
+    <div class="menu-inner">
+      <h1 class="game-title">CRÔNICAS DE AETHERIA</h1>
+      <div class="game-subtitle">Um RPG de Fantasia Medieval</div>
+      <nav id="menu-buttons">
+        <button data-action="new">⚔️ Novo Jogo</button>
+        <button data-action="continue" id="btn-continue" class="disabled">📜 Continuar</button>
+        <button data-action="settings">⚙️ Configurações</button>
+        <button data-action="controls">🎮 Controles</button>
+        <button data-action="credits">✨ Créditos</button>
+      </nav>
+      <div class="menu-footer">v1.0 — executa 100% no navegador</div>
+    </div>
+    <div id="menu-panel" class="hidden"></div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-topleft">
+      <div id="player-plate">
+        <div class="bars">
+          <div class="bar-row"><span class="bar-label">HP</span><div class="bar hp"><div id="bar-hp-fill"></div><span id="bar-hp-text"></span></div></div>
+          <div class="bar-row"><span class="bar-label">MP</span><div class="bar mp"><div id="bar-mp-fill"></div><span id="bar-mp-text"></span></div></div>
+          <div class="bar-row"><span class="bar-label">SP</span><div class="bar sp"><div id="bar-sp-fill"></div></div></div>
+          <div class="bar-row xp"><div class="bar xp"><div id="bar-xp-fill"></div></div><span id="lvl-text">Nv 1</span></div>
+        </div>
+        <div id="element-badge"><span id="element-icon">✦</span><span id="element-name">—</span></div>
+      </div>
+      <div id="quest-tracker">
+        <div id="quest-title">Sem missão</div>
+        <div id="quest-objective"></div>
+        <div id="quest-dist"></div>
+      </div>
+    </div>
+    <div id="hud-topright">
+      <div id="gold-display">🪙 <span id="gold-amount">0</span></div>
+      <div id="clock-display">☀️ <span id="clock-time">08:00</span></div>
+      <canvas id="minimap" width="180" height="180"></canvas>
+      <div id="region-name"></div>
+    </div>
+    <div id="boss-bar" class="hidden">
+      <div id="boss-name">Boss</div>
+      <div class="bar boss"><div id="bar-boss-fill"></div></div>
+    </div>
+    <div id="crosshair" class="hidden">✛</div>
+    <div id="interact-prompt" class="hidden"></div>
+    <div id="hint-text"></div>
+    <div id="hotbar"></div>
+    <div id="combo-list"></div>
+  </div>
+
+  <!-- Painéis modais -->
+  <div id="modal-layer" class="hidden"></div>
+
+  <!-- Controles de toque -->
+  <div id="touch-ui" class="hidden">
+    <div id="joy-zone"><div id="joy-base"><div id="joy-stick"></div></div></div>
+    <div id="cam-zone"></div>
+    <div id="touch-buttons">
+      <button data-tb="attack">⚔️</button>
+      <button data-tb="dodge">💨</button>
+      <button data-tb="jump">🦘</button>
+      <button data-tb="block">🛡️</button>
+      <button data-tb="interact">💬</button>
+      <button data-tb="grimoire">📖</button>
+      <button data-tb="spell1">1</button>
+      <button data-tb="spell2">2</button>
+      <button data-tb="spell3">3</button>
+      <button data-tb="spell4">4</button>
+      <button data-tb="potion">🧪</button>
+      <button data-tb="map">🗺️</button>
+    </div>
+  </div>
+
+  <canvas id="game-canvas"></canvas>
+  <script>
+    // Watchdog: se o módulo principal não iniciar, mostra tela de erro amigável
+    setTimeout(function () {
+      if (!window.__AETHERIA_READY) {
+        var ls = document.getElementById('loading-screen');
+        if (ls) ls.classList.add('hidden');
+        var es = document.getElementById('error-screen');
+        if (es) {
+          es.classList.remove('hidden');
+          var m = document.getElementById('error-message');
+          if (m) m.textContent = 'Não foi possível carregar o jogo.';
+          var d = document.getElementById('error-detail');
+          if (d) d.textContent = 'Falha ao carregar módulos/bibliotecas. Verifique sua conexão e recarregue a página.';
+        }
+      }
+    }, 10000);
+  </script>
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
