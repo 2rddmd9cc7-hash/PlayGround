@@ -3,6 +3,35 @@ import * as THREE from '../../vendor/three.module.js';
 import { terrainHeight } from './terrain.js';
 import { rand, randInt } from '../core/utils.js';
 
+// ---- texturas procedurais (canvas) — quebram a aparência "flat" dos low-poly ----
+function noiseTexture(base, amount = 0.12, scale = 64, streak = false) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = scale;
+  const ctx = cv.getContext('2d');
+  const b = new THREE.Color(base);
+  for (let y = 0; y < scale; y++) {
+    for (let x = 0; x < scale; x++) {
+      const n = (Math.random() - 0.5) * 2 * amount + (streak && (x % 16 < 1) ? -amount : 0);
+      ctx.fillStyle = `rgb(${Math.round((b.r + n) * 255)},${Math.round((b.g + n) * 255)},${Math.round((b.b + n) * 255)})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// aplica textura sutil a um material Lambert (uma única vez)
+function textured(mat, amount, streak = false) {
+  if (mat.map) return mat;
+  const tex = noiseTexture(mat.color.getHex(), amount, 64, streak);
+  tex.repeat.set(2, 2);
+  mat.map = tex;
+  mat.needsUpdate = true;
+  return mat;
+}
+
 const MAT = {
   wood: new THREE.MeshLambertMaterial({ color: 0x8a5a2b }),
   woodDark: new THREE.MeshLambertMaterial({ color: 0x5e3c1c }),
@@ -22,6 +51,14 @@ const MAT = {
   metal: new THREE.MeshLambertMaterial({ color: 0x9aa2a8 }),
   crystal: new THREE.MeshLambertMaterial({ color: 0x8ce0ff, emissive: 0x2a6a8a, transparent: true, opacity: 0.9 }),
 };
+
+// texturas sutilmente granuladas nos materiais de superfície grande
+textured(MAT.plaster, 0.10);
+textured(MAT.stone, 0.13, true);
+textured(MAT.roof, 0.08);
+textured(MAT.roofBlue, 0.08);
+textured(MAT.wood, 0.10, true);
+textured(MAT.woodDark, 0.10, true);
 
 export const materials = MAT;
 
@@ -224,6 +261,85 @@ export function makeStall(color = 0xb03a48) {
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 5), MAT.woodDark);
     pole.position.set(lx, 1.1, lz); g.add(pole);
   }
+  return g;
+}
+
+// ---------- Carroça de carga ----------
+export function makeCart() {
+  const g = new THREE.Group();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 1.4), MAT.wood);
+  box.position.y = 0.9; box.castShadow = true; g.add(box);
+  const load = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.4, 0.9), MAT.cloth);
+  load.position.y = 1.35; load.rotation.y = 0.2; g.add(load);
+  for (const side of [-1, 1]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.1, 10), MAT.woodDark);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(-0.4 + (side + 1) * 0.8, 0.45, side * 0.75);
+    wheel.rotation.z = 0; wheel.castShadow = true;
+    g.add(wheel);
+    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.05), MAT.woodDark);
+    spoke.rotation.z = Math.PI / 2; spoke.rotation.y = Math.PI / 2;
+    spoke.position.copy(wheel.position);
+    g.add(spoke);
+  }
+  // guidões
+  for (const side of [-0.3, 0.3]) {
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 5), MAT.woodDark);
+    handle.rotation.x = Math.PI / 2 - 0.15;
+    handle.position.set(side, 0.8, -1.3); g.add(handle);
+  }
+  return g;
+}
+
+// ---------- Banco de praça ----------
+export function makeBench() {
+  const g = new THREE.Group();
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.09, 0.5), MAT.wood);
+  seat.position.y = 0.45; seat.castShadow = true; g.add(seat);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.45, 0.07), MAT.wood);
+  back.position.set(0, 0.68, -0.22); g.add(back);
+  for (const lx of [-0.75, 0.75]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.45, 0.45), MAT.woodDark);
+    leg.position.set(lx, 0.22, 0); g.add(leg);
+  }
+  return g;
+}
+
+// ---------- Barril ----------
+export function makeBarrel() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.75, 10), MAT.wood);
+  body.position.y = 0.38; body.castShadow = true; g.add(body);
+  for (const ry of [0.12, 0.66]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.025, 5, 12), MAT.metal);
+    ring.rotation.x = Math.PI / 2; ring.position.y = ry; g.add(ring);
+  }
+  return g;
+}
+
+// ---------- Caixa de carga ----------
+export function makeCrate() {
+  const g = new THREE.Group();
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.62, 0.62), MAT.wood);
+  box.position.y = 0.31; box.castShadow = true; g.add(box);
+  for (const [rx, rz, ry] of [[0, 0, 0], [0, 0, Math.PI / 2], [Math.PI / 2, 0, 0]]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.06, 0.64), MAT.woodDark);
+    band.rotation.set(rx, ry, rz); band.position.y = 0.31; g.add(band);
+  }
+  return g;
+}
+
+// ---------- Poste de tocha (iluminação de rua) ----------
+export function makeLampPost() {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 3, 6), MAT.woodDark);
+  pole.position.y = 1.5; pole.castShadow = true; g.add(pole);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.06), MAT.woodDark);
+  arm.position.set(0.2, 2.9, 0); g.add(arm);
+  const cage = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.28, 6),
+    new THREE.MeshBasicMaterial({ color: 0xffc060 }));
+  cage.position.set(0.42, 2.72, 0); g.add(cage);
+  g.userData.flame = cage;
   return g;
 }
 

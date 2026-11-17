@@ -21,6 +21,14 @@ const MAT = {
   gold: new THREE.MeshLambertMaterial({ color: 0xe8c26a }),
   eye: new THREE.MeshLambertMaterial({ color: 0x1a1a22 }),
   shield: new THREE.MeshLambertMaterial({ color: 0x6a4a2a }),
+  leather: new THREE.MeshLambertMaterial({ color: 0x5a3a20 }),
+  wood: new THREE.MeshLambertMaterial({ color: 0x6b4423 }),
+  clothGreen: new THREE.MeshLambertMaterial({ color: 0x3a5a2a }),
+};
+
+// durações de cada estado de combate (máquina de estados + watchdog)
+const STATE_DUR = {
+  attack: 0.42, heavy: 0.75, cast: 0.55, hurt: 0.35, dodge: 0.45, interact: 0.6,
 };
 
 class Player {
@@ -44,6 +52,7 @@ class Player {
     this.stepTimer = 0;
     this.chargeT = 0;                // ataque pesado carregando
     this.interactTarget = null;
+    this.arrows = [];                // flechas do arqueiro no ar
     this.buildBody();
   }
 
@@ -102,10 +111,38 @@ class Player {
     }
     this.rightArm = this.arms[1]; this.leftArm = this.arms[0];
 
-    // espada (mão direita)
+    // ---------- ARMAS ----------
+    // espada (mão direita) — visível apenas sacada
     this.sword = this.buildSword();
     this.sword.position.set(0, -0.36, 0.05);
+    this.sword.rotation.set(-0.25, 0, 0.12); // lâmina para cima a partir do punho
     this.rightArm.elbow.add(this.sword);
+
+    // bainha no quadril esquerdo (espada guardada fica aqui)
+    this.sheath = new THREE.Group();
+    const sheathBody = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.9, 0.1), MAT.leather);
+    sheathBody.position.y = -0.15; sheathBody.castShadow = true;
+    this.sheath.add(sheathBody);
+    const sheathTip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 6), MAT.metalDark);
+    sheathTip.position.y = -0.62; sheathTip.rotation.x = Math.PI; this.sheath.add(sheathTip);
+    this.sheath.position.set(-0.22, -0.1, -0.12);
+    this.sheath.rotation.z = 0.35; // inclinada para trás
+    this.hips.add(this.sheath);
+    // cópia da espada guardada na bainha (punho para fora)
+    this.sheathSword = this.buildSword();
+    this.sheathSword.rotation.x = Math.PI;
+    this.sheathSword.position.y = 0.05;
+    this.sheath.add(this.sheathSword);
+
+    // cajado (mão direita)
+    this.staff = this.buildStaff();
+    this.staff.position.set(0, -0.34, 0.04);
+    this.rightArm.elbow.add(this.staff);
+
+    // arco (mão esquerda)
+    this.bow = this.buildBow();
+    this.bow.position.set(0, -0.32, 0.1);
+    this.leftArm.elbow.add(this.bow);
 
     // escudo (mão esquerda)
     this.shield = new THREE.Group();
@@ -115,8 +152,15 @@ class Player {
     this.shield.add(shieldBody);
     const shieldBoss = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), MAT.metal);
     shieldBoss.position.z = 0.04; this.shield.add(shieldBoss);
+    const shieldRim = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.02, 6, 14), MAT.metalDark);
+    shieldRim.position.z = 0.02; this.shield.add(shieldRim);
     this.shield.position.set(0, -0.38, 0.05);
     this.leftArm.elbow.add(this.shield);
+
+    // estado da arma: guardada / sacada / animando
+    this.weaponState = 'sheathed';   // sheathed | drawing | drawn | sheathing
+    this.weaponT = 0;
+    this.combatIdleT = 0;            // tempo sem combate (para guardar a arma)
 
     // pernas
     this.legs = [];
@@ -147,10 +191,47 @@ class Player {
     tip.position.y = 1.0; g.add(tip);
     const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), MAT.gold);
     pommel.position.y = -0.11; g.add(pommel);
+    g.userData.blade = blade;
+    return g;
+  }
+
+  buildStaff() {
+    const g = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 1.3, 6), MAT.wood);
+    shaft.position.y = 0.45; shaft.castShadow = true; g.add(shaft);
+    // cabeça: garra + orbe
+    const claw1 = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.14, 4), MAT.metalDark);
+    claw1.position.set(0.05, 1.1, 0); claw1.rotation.z = -0.5; g.add(claw1);
+    const claw2 = claw1.clone(); claw2.position.x = -0.05; claw2.rotation.z = 0.5; g.add(claw2);
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6),
+      new THREE.MeshLambertMaterial({ color: 0x7ec8ff, emissive: 0x1a4a8a, emissiveIntensity: 0.9 }));
+    orb.position.y = 1.16; g.add(orb);
+    g.userData.orb = orb;
+    return g;
+  }
+
+  buildBow() {
+    const g = new THREE.Group();
+    const limb = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.02, 6, 20, Math.PI * 1.35), MAT.wood);
+    limb.rotation.z = Math.PI - (Math.PI * 1.35) / 2; // abertura para baixo/tras
+    limb.castShadow = true; g.add(limb);
+    const tip1 = new THREE.Mesh(new THREE.SphereGeometry(0.02, 4, 4), MAT.belt);
+    tip1.position.y = 0.3; g.add(tip1);
+    const tip2 = tip1.clone(); tip2.position.y = -0.3; g.add(tip2);
+    // corda
+    const string = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.62, 3), new THREE.MeshBasicMaterial({ color: 0xe8e0d0 }));
+    string.position.y = 0; g.add(string);
+    g.rotation.y = Math.PI / 2; // corda atrás da mão
     return g;
   }
 
   // ---------- aparência por equipamento ----------
+  weaponType() {
+    const w = G.equipment.weapon;
+    const wt = w ? (w.wtype || 'sword') : (G.classe === 'mago' ? 'staff' : G.classe === 'arqueiro' ? 'bow' : 'sword');
+    return wt;
+  }
+
   refreshEquipment() {
     const eq = G.equipment;
     // cor da armadura
@@ -158,11 +239,92 @@ class Player {
     MAT.cape.color.setHex(eq.cape ? 0x2a4a8a : 0x8a1a2a);
     this.cape.visible = !!eq.cape;
     // arma melhor = lâmina maior
-    const s = this.sword.children[2];
+    const s = this.sword.userData.blade;
     const wIdx = eq.weapon ? (eq.weapon.tier || 0) : 0;
     s.scale.set(1 + wIdx * 0.12, 1 + wIdx * 0.22, 1);
     MAT.metal.color.setHex(eq.weapon ? 0xd8e2ea : 0xb8bec4);
     MAT.boots.color.setHex(eq.boots ? 0x22201c : 0x33261a);
+
+    // ---- visibilidade por tipo de arma + estado (sacada/guardada) ----
+    const wt = this.weaponType();
+    const hasWeapon = !!eq.weapon;
+    const drawn = this.weaponState === 'drawn' || this.weaponState === 'drawing';
+    // espada: na mão quando sacada; na bainha quando guardada
+    this.sword.visible = wt === 'sword' && drawn;
+    this.sheath.visible = wt === 'sword';
+    // cajado/arco: sempre na mão quando equipados
+    this.staff.visible = wt === 'staff';
+    this.bow.visible = wt === 'bow';
+    // escudo: só quando equipado no slot offhand
+    this.shield.visible = !!eq.offhand;
+    // se espada guardada, cópia na bainha
+    this.sheathSword.visible = wt === 'sword' && !drawn;
+  }
+
+  // sacar a arma (animação de equipar) — usada no início de combate e pela seleção de classe
+  drawWeapon(auto = false) {
+    if (this.weaponState === 'drawn' || this.weaponState === 'drawing') return true;
+    if (!G.equipment.weapon && this.weaponType() === 'sword') return false; // sem espada para sacar
+    this.weaponState = 'drawing';
+    this.weaponT = 0;
+    if (!auto) audio.sfx('chest');
+    return true;
+  }
+
+  sheatheWeapon() {
+    if (this.weaponState !== 'drawn') return;
+    this.weaponState = 'sheathing';
+    this.weaponT = 0;
+    audio.sfx('pageFlip');
+  }
+
+  updateWeapon(dt) {
+    const wt = this.weaponType();
+    if (this.weaponState === 'drawing') {
+      this.weaponT += dt;
+      if (this.weaponT >= 0.45) { this.weaponState = 'drawn'; audio.sfx('swing'); }
+    } else if (this.weaponState === 'sheathing') {
+      this.weaponT += dt;
+      if (this.weaponT >= 0.4) { this.weaponState = 'sheathed'; this.refreshEquipment(); }
+    } else if (this.weaponState === 'drawn') {
+      // fora de combate por 7s → guarda a arma
+      if (G.combatMusic <= 0) {
+        this.combatIdleT += dt;
+        if (this.combatIdleT > 7 && this.grounded && this.speed < 0.5) this.sheatheWeapon();
+      } else this.combatIdleT = 0;
+    }
+    // espada guardada: cópia visual na bainha
+    if (this.sheathSword && this.sheathSword.visible) {
+      this.sheathSword.rotation.z = 0;
+    }
+    // brilho do orbe do cajado pulsa com mana
+    if (this.staff.visible && this.staff.userData.orb) {
+      const m = this.staff.userData.orb.material;
+      m.emissiveIntensity = 0.5 + Math.sin(performance.now() * 0.004) * 0.25 + (G.mp / Math.max(1, G.maxMp)) * 0.6;
+    }
+    // flechas no ar
+    for (let i = this.arrows.length - 1; i >= 0; i--) {
+      const a = this.arrows[i];
+      a.t += dt;
+      a.mesh.position.x += a.vx * dt; a.mesh.position.z += a.vz * dt;
+      a.mesh.position.y += a.vy * dt; a.vy -= 6 * dt;
+      a.mesh.lookAt(a.mesh.position.x + a.vx, a.mesh.position.y + a.vy, a.mesh.position.z + a.vz);
+      // acerto
+      for (const e of (G.enemies?.active || [])) {
+        if (e.dead) continue;
+        const dxz = Math.hypot(a.mesh.position.x - e.root.position.x, a.mesh.position.z - e.root.position.z);
+        if (dxz < e.radius + 0.5 && a.mesh.position.y > e.root.position.y - 0.4 && a.mesh.position.y < e.root.position.y + 1.8) {
+          e.takeDamage(a.dmg, { x: a.vx, z: a.vz, kb: 2, source: 'player' });
+          effects.particles.burst(a.mesh.position.x, a.mesh.position.y, a.mesh.position.z, 6,
+            { r: 1, g: 0.9, b: 0.7, spread: 1, life: 0.3, size: 0.25 });
+          a.t = 99; break;
+        }
+      }
+      if (a.t > 2.2 || a.mesh.position.y < terrainHeight(a.mesh.position.x, a.mesh.position.z)) {
+        G.scene.remove(a.mesh);
+        this.arrows.splice(i, 1);
+      }
+    }
   }
 
   // ---------- ciclo ----------
@@ -174,6 +336,14 @@ class Player {
     this.staggered = Math.max(0, this.staggered - dt);
     this.hurtFlash = Math.max(0, this.hurtFlash - dt * 2);
     if (this.comboTimer === 0 && this.comboIdx > 0 && this.state !== 'attack') this.comboIdx = 0;
+
+    // ---- WATCHDOG da máquina de estados de combate ----
+    // garante que TODO estado temporário termina, mesmo se uma exceção
+    // em qualquer ponto do update impedir a transição normal
+    const sdur = STATE_DUR[this.state];
+    if (sdur && this.stateT >= sdur && this.state !== 'dead' && this.state !== 'crystal') {
+      this.state = 'idle'; this.stateT = 0; this.attackHitDone = false;
+    }
 
     const busy = ['attack', 'cast', 'dodge', 'heavy', 'hurt', 'dead', 'interact', 'crystal'].includes(this.state);
 
@@ -289,6 +459,9 @@ class Player {
     if (this.state === 'attack') this.updateAttackPose();
     if (this.state === 'interact' && this.stateT > 0.6) this.state = 'idle';
 
+    // ---- armas (sacar/guardar/flechas) ----
+    this.updateWeapon(dt);
+
     // ---- pose ----
     this.updatePose(dt);
     this.root.traverse(o => { if (o.isMesh) { } });
@@ -310,27 +483,26 @@ class Player {
   }
 
   handleAttack(dt, camera) {
-    // carregar pesado segurando
+    // clique rápido (edge) — sempre dispara o combo, mesmo se down/up ocorrerem no mesmo frame
+    const clicked = input.leftPressed || touchPressed('attack');
+    if (clicked && (this.state === 'idle' || this.state === 'run' || this.state === 'sprint') && this.grounded) {
+      this.startAttack('combo', camera);
+      this.chargeT = 0;
+    }
+    // segurar: carrega o ataque pesado
     const held = input.buttons.left || touchHeld('attack');
     if (held && (this.state === 'idle' || this.state === 'run' || this.state === 'sprint')) {
       this.chargeT += dt;
       if (this.chargeT > 0.45 && this.grounded && G.stamina >= 30) {
-        // inicia pesado
-        this.startAttack('heavy');
+        this.startAttack('heavy', camera);
         this.chargeT = 0;
       }
     } else {
-      if (this.chargeT > 0 && this.chargeT < 0.45) {
-        // clique curto: combo
-        if ((this.state === 'idle' || this.state === 'run' || this.state === 'sprint') && this.grounded) {
-          this.startAttack('combo');
-        }
-      }
       this.chargeT = 0;
     }
     if (wasPressed('KeyQ') && this.grounded && this.stamina >= 30 &&
       (this.state === 'idle' || this.state === 'run' || this.state === 'sprint')) {
-      this.startAttack('heavy');
+      this.startAttack('heavy', camera);
     }
 
     if (this.state === 'attack' || this.state === 'heavy') {
@@ -346,8 +518,12 @@ class Player {
     }
   }
 
-  startAttack(kind) {
+  startAttack(kind, camera) {
     const heavy = kind === 'heavy';
+    // arma precisa estar sacada: saca durante o wind-up
+    if (this.weaponType() === 'sword' && this.weaponState !== 'drawn' && this.weaponState !== 'drawing') {
+      this.drawWeapon(true);
+    }
     if (!heavy) {
       this.comboIdx = (this.comboTimer > 0 ? this.comboIdx + 1 : 1) % 3 || 3;
       this.comboTimer = 1.0;
@@ -360,8 +536,8 @@ class Player {
     this.stateT = 0;
     this.attackHitDone = false;
     this.iframe = 0;
-    // olhar para o alvo próximo ou direção da câmera
-    this.actionYaw = this.aimYaw(camera);
+    // olhar para o alvo próximo ou direção da câmera (fallback: câmera global)
+    this.actionYaw = this.aimYaw(camera || G.camera);
     audio.sfx('swing');
   }
 
@@ -372,8 +548,10 @@ class Player {
   }
 
   doMeleeHit(heavy) {
+    // Arqueiro: dispara flecha em vez de golpe
+    if (this.weaponType() === 'bow') { this.doBowShot(heavy); return; }
     const dirX = Math.sin(this.yaw), dirZ = Math.cos(this.yaw);
-    const reach = heavy ? 3.2 : 2.6;
+    const reach = this.weaponType() === 'staff' ? 2.2 : (heavy ? 3.2 : 2.6);
     const dmgBase = 6 + G.attributes.forca * 1.2 + (G.equipment.weapon ? G.equipment.weapon.dmg : 0);
     const dmg = dmgBase * (heavy ? 2.1 : 1) * rand(0.85, 1.15);
     const crit = Math.random() < 0.05 + G.attributes.critico * 0.012;
@@ -398,12 +576,37 @@ class Player {
     const hz = this.root.position.z + dirZ * 1.2;
     const hy = this.root.position.y + 1.1;
     const c = heavy ? 0xffe0a0 : 0xcfd8e2;
+    effects.slash(this.root.position.x, this.root.position.y + 1.1, this.root.position.z, this.yaw, c, heavy ? 1.5 : 1.1);
     effects.particles.burst(hx, hy, hz, heavy ? 10 : 6,
       { r: 0.85, g: 0.88, b: 0.95, spread: 1.6, up: 0.2, life: 0.25, size: 0.3, drag: 0.8 });
     if (hitAny) audio.sfx(crit ? 'crit' : 'hit');
     if (heavy) {
       G.combatMusic = 5;
     }
+  }
+
+  // flecha do arqueiro: projétil físico com arco
+  doBowShot(heavy) {
+    const dmgBase = 5 + G.attributes.forca * 1.0 + (G.equipment.weapon ? G.equipment.weapon.dmg * 1.4 : 0);
+    const dmg = dmgBase * (heavy ? 1.9 : 1) * rand(0.9, 1.15);
+    const crit = Math.random() < 0.12 + G.attributes.critico * 0.015;
+    const speed = 22;
+    const dirX = Math.sin(this.yaw), dirZ = Math.cos(this.yaw);
+    // mesh da flecha
+    const arrow = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.55, 4), MAT.wood);
+    shaft.rotation.x = Math.PI / 2; arrow.add(shaft);
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 4), MAT.metal);
+    head.rotation.x = -Math.PI / 2; head.position.z = 0.3; arrow.add(head);
+    const origin = this.root.position;
+    arrow.position.set(origin.x + dirX * 0.5, origin.y + 1.3, origin.z + dirZ * 0.5);
+    arrow.rotation.y = this.yaw;
+    G.scene.add(arrow);
+    this.arrows.push({ mesh: arrow, vx: dirX * speed, vz: dirZ * speed, vy: heavy ? 1.6 : 0.8, dmg: dmg * (crit ? 2 : 1), t: 0 });
+    audio.sfx(heavy ? 'bowHeavy' : 'bow');
+    // partícula de disparo
+    effects.particles.burst(arrow.position.x, arrow.position.y, arrow.position.z, 4,
+      { r: 0.9, g: 0.85, b: 0.7, spread: 0.6, life: 0.25, size: 0.2 });
   }
 
   handleSpells() {
@@ -487,7 +690,7 @@ class Player {
         }
       }
     } else if (st === 'cast') {
-      const p = clamp(this.stateT / 0.5, 0, 1);
+      const p = clamp(this.stateT / 0.55, 0, 1);
       rSh = -2.2 - Math.sin(p * Math.PI) * 0.4;
       rEl = -0.9;
       lSh = -0.5; lEl = -0.9;

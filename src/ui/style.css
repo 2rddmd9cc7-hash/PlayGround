@@ -208,3 +208,8 @@ button { font-family:inherit; cursor:pointer; }
 .ending-stats b { font-size:20px; color:var(--gold); }
 #ending-continue { padding:12px 28px; background:#2c2216; color:var(--gold); border:1px solid var(--gold); border-radius:10px; cursor:pointer; font-size:15px; }
 #ending-continue:hover { background:#3c2e1c; }
+
+/* Seleção de classe */
+.modal.wide { max-width:860px; width:92vw; }
+.class-card:hover { box-shadow:0 0 24px rgba(232,194,106,.18); }
+@media (max-width:900px){ .modal.wide { grid-template-columns:1fr !important; } }

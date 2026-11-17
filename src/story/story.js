@@ -6,6 +6,7 @@ import { audio } from '../audio/audio.js';
 import { effects, ELEMENT_COLORS } from '../effects/effects.js';
 import { xpForLevel } from '../ui/hud.js';
 import { wasPressed } from '../core/input.js';
+import { classStatMults } from '../player/classes.js';
 import { rand, clamp } from '../core/utils.js';
 import { terrainHeight } from '../world/terrain.js';
 
@@ -86,9 +87,10 @@ class Story {
   recalcStats() {
     const a = G.attributes;
     const eq = G.equipment;
-    G.maxHp = 80 + a.resistencia * 6 + G.level * 8 + (eq.accessory?.hp || 0);
-    G.maxMp = 40 + a.mana * 5 + G.level * 4;
-    G.maxStamina = 80 + a.resistencia * 4;
+    const cm = classStatMults();
+    G.maxHp = Math.round((80 + a.resistencia * 6 + G.level * 8 + (eq.accessory?.hp || 0)) * cm.hpMult);
+    G.maxMp = Math.round((40 + a.mana * 5 + G.level * 4 + (eq.weapon?.mpBonus || 0)) * cm.mpMult);
+    G.maxStamina = Math.round((80 + a.resistencia * 4) * cm.staminaMult);
     G.hp = Math.min(G.hp + 30, G.maxHp); // cura parcial ao subir de nível
     G.mp = G.maxMp;
     if (G.player) G.player.refreshEquipment?.();
@@ -108,7 +110,14 @@ class Story {
     if (id === 'main_teste') { /* concluída ao interagir com cristal */ }
     if (id === 'main_invasao') {
       G.storyFlags.invasionWon = true;
+      // cadeia secundária: ferreiro preocupado → estrada perigosa
+      G.quests.offer('blacksmith_worry');
+      G.hud?.hint('⚒️ O Ferreiro Doran quer falar com você sobre a defesa da cidade.', 7000);
       this._openWorld();
+    }
+    if (id === 'blacksmith_worry') {
+      G.quests.offer('dangerous_road');
+      G.hud?.hint('⚔️ Nova missão: limpe a estrada dos goblins!', 7000);
     }
     if (id === 'main_dungeon') {
       G.storyFlags.dungeonDone = true;
@@ -138,6 +147,10 @@ class Story {
     if (npcId === 'elder' && !G.storyFlags.talkedElder) {
       G.storyFlags.talkedElder = true;
       G.hud?.hint('Siga a estrada ao NORTE até Aurelia. (Use o minimapa!)');
+    }
+    // objetivo "falar com o ferreiro" da cadeia pós-invasão
+    if (npcId === 'blacksmith' && G.quests.activeIds.includes('blacksmith_worry')) {
+      G.quests.onObjectiveFlag('blacksmith_worry', 'talk');
     }
   }
 
