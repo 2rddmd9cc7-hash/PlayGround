@@ -467,11 +467,11 @@ class EnemyManager {
         }
       }
     }
-    // remove mortos antigos
+    // remove mortos antigos (invasores e bosses nunca são removidos por distância)
     for (let i = this.active.length - 1; i >= 0; i--) {
       const e = this.active[i];
       const far = e.root.position.distanceTo(new THREE.Vector3(playerPos.x, e.root.position.y, playerPos.z)) > 90;
-      if ((e.dead && e.deathT > 4) || (far && !e.boss)) {
+      if ((e.dead && e.deathT > 4) || (far && !e.boss && !e.invasion)) {
         G.scene.remove(e.root);
         this.active.splice(i, 1);
       }
@@ -479,7 +479,7 @@ class EnemyManager {
     // IA
     for (const e of this.active) {
       const d = Math.hypot(e.root.position.x - playerPos.x, e.root.position.z - playerPos.z);
-      if (d < 75 || e.boss) e.update(dt, playerPos);
+      if (d < 75 || e.boss || e.invasion) e.update(dt, playerPos);
     }
     // invasão: spawner especial controlado pela história
     this.invasion?.(dt);

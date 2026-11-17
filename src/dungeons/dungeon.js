@@ -29,9 +29,9 @@ export class Dungeon {
     const MAT = P.PropMaterials;
     const rockMat = new THREE.MeshLambertMaterial({ color: 0x3a3230, flatShading: true });
 
-    // chão de pedra
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(80, 1, 120), rockMat);
-    floor.position.set(ox, -0.5, 0);
+    // chão de pedra (estendido até a entrada, para não ver o céu pela fresta)
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(80, 1, 175), rockMat);
+    floor.position.set(ox, -0.5, 12);
     floor.receiveShadow = true;
     g.add(floor);
 
@@ -70,12 +70,19 @@ export class Dungeon {
       this._collide(cx, cz, 1.2);
     }
 
-    // tochas das paredes
+    // tochas das paredes (com luzes de verdade)
     for (const [tx, tz] of [[-5.4, -46], [5.4, -46], [-17, -20], [17, -20], [-5, 12], [5, 12], [-16, 30], [16, 30], [-4, 64], [4, 64], [-10, 80], [10, 80]]) {
       const t = P.makeTorch(1.6);
       t.position.set(ox + tx, 0, tz);
       g.add(t);
+      const light = new THREE.PointLight(0xffb060, 30, 14, 2);
+      light.position.set(0, 2.1, 0);
+      t.add(light);
     }
+    // luz que acompanha o jogador dentro da caverna
+    this.playerLight = new THREE.PointLight(0xffd9a0, 55, 18, 2);
+    this.playerLight.position.set(ox, 2.2, -62);
+    g.add(this.playerLight);
 
     // armadilhas: espinhos no chão (dano ao pisar)
     for (let i = 0; i < 8; i++) {
@@ -103,11 +110,12 @@ export class Dungeon {
     altar.position.set(ox, 0, 92);
     g.add(altar);
 
-    // cristais brilhantes decorativos
+    // cristais brilhantes decorativos (longe dos corredores)
     for (let i = 0; i < 10; i++) {
-      const c = new THREE.Mesh(new THREE.OctahedronGeometry(rand(0.3, 0.7), 0),
+      const sideX = (Math.random() < 0.5 ? -1 : 1) * rand(9, 19);
+      const c = new THREE.Mesh(new THREE.OctahedronGeometry(rand(0.3, 0.6), 0),
         new THREE.MeshLambertMaterial({ color: 0x6ac0e8, emissive: 0x1a4a6a, transparent: true, opacity: 0.8 }));
-      c.position.set(ox + rand(-18, 18), rand(0.4, 2), rand(-54, 94));
+      c.position.set(ox + sideX, rand(0.3, 1.6), rand(-54, 94));
       g.add(c);
     }
 
@@ -180,6 +188,11 @@ export class Dungeon {
 
   update(dt) {
     if (!this.active) return;
+    // luz acompanha o jogador
+    if (this.playerLight) {
+      const p = G.player.root.position;
+      this.playerLight.position.set(p.x, p.y + 2.2, p.z);
+    }
     // armadilhas
     const pl = G.player.root.position;
     for (const t of this.traps) {

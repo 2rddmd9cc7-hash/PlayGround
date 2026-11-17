@@ -163,18 +163,20 @@ class Story {
     pl.root.rotation.y = pl.yaw;
     pl.updatePose(dt);
     const crystal = G.world.crystal;
+    // posição de MUNDO do cristal (ele vive dentro do keep, coords locais ≠ mundo)
+    const CW = new THREE.Vector3(); crystal.getWorldPosition(CW);
     const cam = G.camCtl ?? G.camera;
     const plPos = pl.root.position;
 
     if (st.phase === 0) {
       // aproximar o jogador do cristal
-      const target = new THREE.Vector3(crystal.position.x + 2.2, plPos.y, crystal.position.z + 1.2);
+      const target = new THREE.Vector3(CW.x + 2.2, plPos.y, CW.z + 1.2);
       plPos.lerp(target, Math.min(1, dt * 2));
-      pl.yaw = Math.atan2(crystal.position.x - plPos.x, crystal.position.z - plPos.z);
+      pl.yaw = Math.atan2(CW.x - plPos.x, CW.z - plPos.z);
       pl.state = 'crystal'; pl.stateT = 0;
       // câmera aproxima
-      const camTarget = new THREE.Vector3(crystal.position.x + 3.5, crystal.position.y + 4.5, crystal.position.z + 4);
-      const look = new THREE.Vector3(crystal.position.x, crystal.position.y + 2.5, crystal.position.z);
+      const camTarget = new THREE.Vector3(CW.x + 3.5, CW.y + 4.5, CW.z + 4);
+      const look = new THREE.Vector3(CW.x, CW.y + 2.5, CW.z);
       cam.overrideTo(camTarget, look, dt, 2.5);
       if (st.t > 2.2) { st.phase = 1; st.t = 0; st.element = this._pickElement(); }
     } else if (st.phase === 1) {
@@ -185,7 +187,7 @@ class Story {
       crystal.userData.crystal.position.y = 2.6 + Math.sin(st.t * 3) * 0.15;
       if (Math.random() < dt * 30) {
         effects.particles.emit({
-          x: crystal.position.x + rand(-1.2, 1.2), y: crystal.position.y + rand(1, 3.6), z: crystal.position.z + rand(-1.2, 1.2),
+          x: CW.x + rand(-1.2, 1.2), y: CW.y + rand(1, 3.6), z: CW.z + rand(-1.2, 1.2),
           vy: 1.5, life: 1, size: 0.3, r: 0.6, g: 0.9, b: 1, drag: 0.96,
         });
       }
@@ -201,7 +203,7 @@ class Story {
           vy: 2.5, life: 0.8, size: 0.35, r: c.r, g: c.g, b: c.b, drag: 0.95,
         });
       }
-      effects.flashSphere(crystal.position.x, crystal.position.y + 2.6, crystal.position.z, 2 + st.t * 2, ELEMENTS[el].color, 0.3, 0.5);
+      effects.flashSphere(CW.x, CW.y + 2.6, CW.z, 2 + st.t * 2, ELEMENTS[el].color, 0.3, 0.5);
       cam.overrideTo(
         new THREE.Vector3(plPos2.x - 3, plPos2.y + 3.5, plPos2.z + 4),
         new THREE.Vector3(plPos2.x, plPos2.y + 1.4, plPos2.z), dt, 2);
