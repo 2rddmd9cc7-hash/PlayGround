@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Crônicas de Aetheria — RPG 3D</title>
+<style>
+:root{
+  --gold:#d8b45a; --gold2:#f5d97a; --parch:#e8d9b0; --ink:#2a2018;
+  --blood:#a52a2a; --hp:#c0392b; --mana:#2e86c1; --stam:#27ae60; --xp:#c9a227;
+  --panel:rgba(12,9,7,.88); --border:rgba(216,180,90,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#050403;font-family:Georgia,'Times New Roman',serif;color:#e8dcc0}
+#app{position:fixed;inset:0}
+canvas{display:block}
+.hidden{display:none !important}
+button{font-family:inherit;cursor:pointer}
+
+/* ============ LOADING / ERROR ============ */
+#loading{position:fixed;inset:0;background:radial-gradient(ellipse at center,#1a1208 0%,#050403 75%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
+#loading h1{font-size:42px;letter-spacing:6px;color:var(--gold2);text-shadow:0 0 30px rgba(216,180,90,.4)}
+#loading .sub{margin-top:8px;color:#a89060;letter-spacing:3px;font-style:italic}
+#loadbar{margin-top:30px;width:min(420px,70vw);height:10px;border:1px solid var(--border);border-radius:5px;overflow:hidden;background:#0a0806}
+#loadbar>div{height:100%;width:0%;background:linear-gradient(90deg,#8a6a20,#f5d97a);transition:width .3s}
+#loadmsg{margin-top:10px;font-size:12px;color:#8a7850;letter-spacing:2px}
+#error-overlay{position:fixed;inset:0;background:rgba(5,4,3,.96);z-index:300;display:none;align-items:center;justify-content:center}
+#error-overlay .box{max-width:560px;padding:30px;border:2px solid #a52a2a;background:#160b08;border-radius:10px;text-align:center}
+#error-overlay h2{color:#e88;font-size:24px;margin-bottom:12px}
+#error-overlay p{color:#cba;font-size:14px;line-height:1.6;margin-bottom:14px}
+#error-overlay pre{text-align:left;font-size:11px;color:#a88;background:#000;padding:10px;border-radius:6px;max-height:120px;overflow:auto;white-space:pre-wrap}
+#error-overlay button{margin-top:10px;padding:10px 26px;background:#3a1a12;color:#eaa;border:1px solid #a52a2a;border-radius:6px;font-size:14px}
+
+/* ============ MAIN MENU ============ */
+#mainmenu{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,#2a1c0e 0%,#0a0705 70%)}
+#mainmenu .inner{text-align:center}
+#mainmenu h1{font-size:52px;letter-spacing:8px;color:var(--gold2);text-shadow:0 0 40px rgba(245,217,122,.35),0 2px 0 #3a2a08}
+#mainmenu h2{font-size:15px;letter-spacing:5px;color:#a89060;margin-top:6px;font-weight:normal;font-style:italic}
+#mm-buttons{margin-top:44px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.mm-btn{width:280px;padding:13px;background:linear-gradient(180deg,rgba(58,44,20,.9),rgba(30,22,10,.9));border:1px solid var(--border);border-radius:6px;color:var(--parch);font-size:17px;letter-spacing:3px;transition:all .15s}
+.mm-btn:hover{background:linear-gradient(180deg,rgba(90,68,28,.95),rgba(50,36,16,.95));color:#fff;box-shadow:0 0 18px rgba(216,180,90,.25)}
+.mm-btn:disabled{opacity:.35;cursor:not-allowed}
+#mm-version{margin-top:30px;font-size:11px;color:#6a5a38;letter-spacing:2px}
+
+/* ============ HUD ============ */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:50}
+#hud>*{pointer-events:none}
+
+/* vitals top-left */
+#vitals{position:absolute;top:16px;left:16px;width:270px}
+#vitals .row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.lvl-orb{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#5a4416,#241a06);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--gold2);font-weight:bold;flex-shrink:0;text-shadow:0 0 8px rgba(245,217,122,.6)}
+.barcol{flex:1}
+.bar{position:relative;height:15px;background:rgba(0,0,0,.65);border:1px solid rgba(216,180,90,.4);border-radius:3px;overflow:hidden}
+.bar+.bar{margin-top:4px}
+.bar>.fill{position:absolute;inset:0;transform-origin:left;border-radius:2px}
+.bar.hp>.fill{background:linear-gradient(180deg,#e05545,#8a1e12)}
+.bar.mp>.fill{background:linear-gradient(180deg,#4aa0e0,#1a4a7a)}
+.bar.sp>.fill{background:linear-gradient(180deg,#4ac070,#1a6a35)}
+.bar>.txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;text-shadow:0 1px 2px #000;letter-spacing:1px}
+#xpbar{height:5px;margin-top:5px}
+#xpbar>.fill{background:linear-gradient(90deg,#8a6a20,#f5d97a)}
+#elem-badge{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:13px;letter-spacing:2px}
+#elem-badge .ico{font-size:18px}
+
+/* minimap top-right */
+#minimap-wrap{position:absolute;top:16px;right:16px;text-align:center}
+#minimap{width:180px;height:180px;border:2px solid var(--border);border-radius:50%;background:#1a140a;box-shadow:0 0 14px rgba(0,0,0,.7)}
+#clock{margin-top:4px;font-size:12px;color:var(--parch);letter-spacing:2px;text-shadow:0 1px 3px #000}
+#gold-display{position:absolute;top:210px;right:16px;font-size:15px;color:var(--gold2);text-shadow:0 1px 3px #000;letter-spacing:1px}
+
+/* quest tracker */
+#quest-tracker{position:absolute;top:130px;left:16px;max-width:290px;background:linear-gradient(180deg,rgba(20,15,8,.75),rgba(12,9,5,.75));border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+#quest-tracker .qt-title{font-size:13px;color:var(--gold2);letter-spacing:2px;margin-bottom:4px}
+#quest-tracker .qt-obj{font-size:12px;color:#d8ccae;line-height:1.45}
+#quest-tracker .qt-dist{font-size:11px;color:#8fb07a;margin-top:3px}
+
+/* hotbar */
+#hotbar{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:7px}
+.hslot{width:56px;height:56px;background:linear-gradient(180deg,rgba(40,30,14,.9),rgba(18,13,7,.9));border:2px solid rgba(216,180,90,.45);border-radius:6px;position:relative;display:flex;align-items:center;justify-content:center;font-size:24px}
+.hslot .key{position:absolute;top:2px;left:5px;font-size:10px;color:var(--gold2);text-shadow:0 1px 2px #000}
+.hslot .cost{position:absolute;bottom:2px;right:5px;font-size:9px;color:#6ab4e8}
+.hslot .cd{position:absolute;inset:0;background:rgba(0,0,0,.72);transform-origin:bottom;border-radius:4px}
+.hslot .qty{position:absolute;bottom:2px;left:5px;font-size:10px;color:#fff;text-shadow:0 1px 2px #000}
+.hslot.locked{opacity:.32;filter:grayscale(1)}
+.hslot.empty{opacity:.5}
+.hslot .nm{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:#b8a878;white-space:nowrap;letter-spacing:.5px}
+
+/* crosshair & interact */
+#crosshair{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px;border:1px solid rgba(255,255,255,.7);border-radius:50%;box-shadow:0 0 4px #000;opacity:.85}
+#interact-prompt{position:absolute;top:58%;left:50%;transform:translateX(-50%);background:rgba(10,8,5,.85);border:1px solid var(--border);padding:7px 16px;border-radius:5px;font-size:14px;letter-spacing:1px;color:var(--parch)}
+#interact-prompt b{color:var(--gold2)}
+
+/* boss bar */
+#bossbar{position:absolute;top:34px;left:50%;transform:translateX(-50%);width:min(560px,70vw);text-align:center}
+#bossbar .bname{font-size:17px;letter-spacing:4px;color:#f0c8a0;text-shadow:0 0 12px rgba(200,80,40,.8),0 2px 3px #000;margin-bottom:5px}
+#bossbar .bbar{height:14px;background:rgba(0,0,0,.75);border:1px solid #7a3a20;border-radius:3px;overflow:hidden}
+#bossbar .bfill{height:100%;background:linear-gradient(180deg,#e06030,#7a1a08);transform-origin:left}
+
+/* announcements */
+#announce{position:absolute;top:24%;left:0;right:0;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s}
+#announce .a-big{font-size:52px;letter-spacing:10px;color:var(--gold2);text-shadow:0 0 34px rgba(245,217,122,.7),0 3px 0 #2a1c04}
+#announce .a-small{font-size:18px;letter-spacing:6px;color:#d8ccae;margin-top:8px;text-shadow:0 2px 4px #000}
+#announce .a-line{width:220px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:12px auto}
+#tut-hint{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(10,8,5,.85);border:1px solid var(--border);border-radius:6px;padding:9px 20px;font-size:14px;letter-spacing:1px;color:#e8dcc0;text-align:center;transition:opacity .4s}
+#tut-hint b{color:var(--gold2)}
+
+/* dialog */
+#dialog{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);width:min(620px,88vw);background:linear-gradient(180deg,rgba(24,18,10,.95),rgba(14,10,6,.95));border:2px solid var(--border);border-radius:8px;padding:16px 20px;pointer-events:auto}
+#dialog .d-name{font-size:16px;color:var(--gold2);letter-spacing:3px;margin-bottom:8px}
+#dialog .d-text{font-size:15px;line-height:1.55;color:#e8dcc0;min-height:44px}
+#dialog .d-opts{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+#dialog .d-opt{text-align:left;padding:7px 12px;background:rgba(60,46,20,.5);border:1px solid rgba(216,180,90,.3);border-radius:4px;color:var(--parch);font-size:14px}
+#dialog .d-opt:hover{background:rgba(90,68,28,.7);color:#fff}
+
+/* damage numbers */
+.dmgnum{position:absolute;font-size:16px;font-weight:bold;text-shadow:0 1px 3px #000;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%)}
+.dmgnum.crit{font-size:22px}
+.dmgnum.player{color:#ff6a5a}.dmgnum.enemy{color:#ffd97a}.dmgnum.heal{color:#6ae08a}
+
+/* toasts */
+#toasts{position:absolute;top:96px;right:196px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{background:rgba(12,9,5,.9);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:4px;padding:8px 14px;font-size:13px;color:var(--parch);animation:toastIn .3s;max-width:320px}
+@keyframes toastIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+
+/* target frame */
+#target-frame{position:absolute;top:110px;left:50%;transform:translateX(-50%);width:230px;background:rgba(12,9,5,.7);border:1px solid rgba(180,80,60,.6);border-radius:6px;padding:6px 10px;text-align:center}
+#target-frame .tname{font-size:13px;color:#f0c8a0;letter-spacing:2px}
+#target-frame .tbar{height:9px;background:#000;border:1px solid #5a2a18;border-radius:2px;margin-top:4px;overflow:hidden}
+#target-frame .tfill{height:100%;background:linear-gradient(180deg,#d05540,#7a1808);transform-origin:left}
+#target-frame .trank{font-size:11px;color:#c9a227;margin-top:2px}
+
+/* ============ PANELS ============ */
+.panel{position:fixed;inset:0;z-index:110;display:none;align-items:center;justify-content:center;background:rgba(4,3,2,.72);backdrop-filter:blur(3px)}
+.panel.open{display:flex}
+.panel .pbox{background:linear-gradient(180deg,#241a0e,#140e07);border:2px solid var(--border);border-radius:10px;padding:24px;max-width:min(860px,92vw);max-height:88vh;overflow:auto;pointer-events:auto;box-shadow:0 10px 60px rgba(0,0,0,.8)}
+.panel h3{color:var(--gold2);letter-spacing:4px;font-size:20px;margin-bottom:16px;text-align:center}
+.pclose{float:right;background:none;border:1px solid var(--border);color:var(--parch);border-radius:4px;padding:3px 10px;font-size:12px}
+
+/* settings */
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:12px;min-width:420px}
+.set-row label{font-size:14px;color:var(--parch);letter-spacing:1px}
+.set-row input[type=range]{width:200px;accent-color:#c9a227}
+.set-row .val{font-size:12px;color:var(--gold2);width:42px;text-align:right}
+.set-row select,.set-row input[type=checkbox]{accent-color:#c9a227}
+.btnrow{display:flex;gap:10px;justify-content:center;margin-top:18px}
+
+/* grimoire */
+#grimoire-book{display:flex;gap:2px;min-width:680px;max-width:92vw}
+.gpage{flex:1;background:linear-gradient(160deg,#e8d9b0,#cfc094);color:var(--ink);padding:22px;border-radius:3px;min-height:440px;position:relative;box-shadow:inset 0 0 40px rgba(120,90,40,.25)}
+.gpage h4{font-size:15px;letter-spacing:2px;border-bottom:1px solid rgba(42,32,24,.4);padding-bottom:8px;margin-bottom:12px;text-align:center}
+.gspell{padding:10px;border-bottom:1px dashed rgba(42,32,24,.3);cursor:pointer;transition:background .15s}
+.gspell:hover{background:rgba(42,32,24,.08)}
+.gspell.sel{background:rgba(160,120,40,.18)}
+.gspell .gs-n{font-size:15px;font-weight:bold}
+.gspell .gs-lv{float:right;font-size:11px;color:#7a5a20}
+.gspell .gs-d{font-size:12px;color:#4a3a26;margin-top:3px;line-height:1.4}
+.gspell .gs-stats{font-size:11px;color:#6a5432;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap}
+.gspell.locked{opacity:.45;cursor:default}
+.gspell.locked .gs-n::after{content:" 🔒";font-size:11px}
+.gpage .gp-art{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:34px;opacity:.5;filter:sepia(1)}
+.gpage.gleft{border-radius:6px 2px 2px 6px}
+.gpage.gright{border-radius:2px 6px 6px 2px;background:linear-gradient(200deg,#e8d9b0,#cfc094)}
+.gspine{width:14px;background:linear-gradient(90deg,#3a2810,#5a4020,#3a2810);border-radius:2px}
+
+/* inventory */
+.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,72px);gap:8px;max-height:400px;overflow-y:auto;padding:4px}
+.inv-cell{width:72px;height:72px;background:rgba(0,0,0,.4);border:1px solid rgba(216,180,90,.3);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:24px}
+.inv-cell:hover{border-color:var(--gold2)}
+.inv-cell .q{position:absolute;bottom:2px;right:4px;font-size:10px;color:#fff}
+.inv-cell.r-com{border-color:#9a9a90}.inv-cell.r-unc{border-color:#5aa04a}.inv-cell.r-rar{border-color:#4a7ad0}.inv-cell.r-epi{border-color:#a050d8}.inv-cell.r-len{border-color:#e0a030}.inv-cell.r-mit{border-color:#e05070}
+.inv-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.inv-tab{padding:6px 14px;font-size:12px;letter-spacing:1px;background:rgba(0,0,0,.35);border:1px solid rgba(216,180,90,.3);border-radius:4px;color:var(--parch)}
+.inv-tab.on{background:rgba(120,90,30,.6);color:#fff}
+#inv-detail{margin-top:12px;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(216,180,90,.25);border-radius:6px;min-height:80px;font-size:13px}
+#inv-detail .id-name{color:var(--gold2);font-size:15px}
+#inv-detail .id-desc{color:#b8a888;margin-top:4px;line-height:1.4}
+#inv-detail .id-stat{color:#8fb07a;margin-top:4px}
+.equip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.eq-slot{width:64px;height:64px;background:rgba(0,0,0,.4);border:1px dashed rgba(216,180,90,.35);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;position:relative}
+.eq-slot .eq-lbl{position:absolute;bottom:-14px;font-size:8px;color:#8a7850;width:100%;text-align:center;letter-spacing:.5px}
+
+/* map */
+#map-canvas{border:2px solid var(--border);border-radius:6px;background:#141008;display:block;max-width:82vw}
+.map-side{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.travel-btn{padding:6px 12px;font-size:12px;background:rgba(60,46,20,.6);border:1px solid var(--border);border-radius:4px;color:var(--parch);letter-spacing:1px}
+.travel-btn:hover{color:#fff}
+
+/* quests panel */
+.q-item{padding:10px;border-bottom:1px solid rgba(216,180,90,.2);cursor:pointer}
+.q-item:hover{background:rgba(255,255,255,.04)}
+.q-item .q-t{color:var(--gold2);font-size:15px;letter-spacing:1px}
+.q-item .q-t.done{color:#7a9a68;text-decoration:line-through}
+.q-item .q-d{font-size:12px;color:#b8a888;margin-top:3px;line-height:1.4}
+.q-item .q-r{font-size:11px;color:#c9a227;margin-top:3px}
+
+/* shop */
+.shop-list{display:flex;flex-direction:column;gap:6px;min-width:420px}
+.shop-item{display:flex;align-items:center;gap:12px;padding:9px 12px;background:rgba(0,0,0,.3);border:1px solid rgba(216,180,90,.25);border-radius:5px}
+.shop-item .si-ico{font-size:24px;width:36px;text-align:center}
+.shop-item .si-n{flex:1;font-size:14px}
+.shop-item .si-p{color:var(--gold2);font-size:13px;margin-right:8px}
+.buy-btn{padding:5px 16px;background:rgba(120,90,30,.5);border:1px solid var(--border);border-radius:4px;color:var(--parch);font-size:13px}
+.buy-btn:hover{color:#fff}
+
+/* controls / credits */
+.ctl-table{width:100%;border-collapse:collapse;font-size:14px}
+.ctl-table td{padding:7px 12px;border-bottom:1px solid rgba(216,180,90,.15)}
+.ctl-table td:first-child{color:var(--gold2);letter-spacing:1px;width:180px}
+.credits p{margin-bottom:8px;font-size:14px;color:#c8b890;text-align:center;line-height:1.6}
+
+/* pause menu */
+#pause-menu .pbox{text-align:center;min-width:340px}
+#pause-menu button{display:block;width:100%;margin-bottom:10px;padding:12px;background:linear-gradient(180deg,rgba(58,44,20,.9),rgba(30,22,10,.9));border:1px solid var(--border);border-radius:6px;color:var(--parch);font-size:16px;letter-spacing:2px}
+#pause-menu button:hover{color:#fff}
+
+/* vignette / flash */
+#vignette{position:absolute;inset:0;box-shadow:inset 0 0 180px rgba(0,0,0,.55);pointer-events:none}
+#hurt-vignette{position:absolute;inset:0;box-shadow:inset 0 0 140px rgba(160,20,10,.0);pointer-events:none;transition:box-shadow .3s}
+#night-tint{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(5,8,20,.35))}
+
+/* mobile */
+#mobile-ui{position:absolute;inset:0;pointer-events:none;display:none}
+#joystick{position:absolute;bottom:30px;left:30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(216,180,90,.3);pointer-events:auto}
+#joystick .stick{position:absolute;top:35px;left:35px;width:50px;height:50px;border-radius:50%;background:rgba(216,180,90,.35)}
+#m-btns{position:absolute;bottom:24px;right:24px;display:grid;grid-template-columns:64px 64px;gap:10px;pointer-events:auto}
+.m-btn{width:64px;height:64px;border-radius:50%;background:rgba(40,30,14,.7);border:2px solid rgba(216,180,90,.4);color:var(--gold2);font-size:11px;letter-spacing:1px;display:flex;align-items:center;justify-content:center;pointer-events:auto}
+.m-btn:active{background:rgba(120,90,30,.8)}
+#m-look{position:absolute;right:0;top:0;width:45%;height:70%;pointer-events:auto}
+#fps-counter{position:absolute;bottom:6px;left:8px;font-size:10px;color:#6a5a38;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Loading -->
+<div id="loading">
+  <h1>CRÔNICAS DE AETHERIA</h1>
+  <div class="sub">Um RPG de Fantasia Medieval</div>
+  <div id="loadbar"><div></div></div>
+  <div id="loadmsg">Preparando o mundo…</div>
+</div>
+
+<!-- Error overlay -->
+<div id="error-overlay">
+  <div class="box">
+    <h2>⚔️ Algo deu errado</h2>
+    <p id="error-msg">O reino de Aetheria encontrou uma magia instável. A página precisa ser recarregada.</p>
+    <pre id="error-detail"></pre>
+    <button onclick="location.reload()">Recarregar</button>
+  </div>
+</div>
+
+<!-- Main menu -->
+<div id="mainmenu" class="hidden">
+  <div class="inner">
+    <h1>CRÔNICAS DE AETHERIA</h1>
+    <h2>— O DESPERTAR DOS ELEMENTOS —</h2>
+    <div id="mm-buttons">
+      <button class="mm-btn" id="mm-new">NOVO JOGO</button>
+      <button class="mm-btn" id="mm-continue" disabled>CONTINUAR</button>
+      <button class="mm-btn" id="mm-settings">CONFIGURAÇÕES</button>
+      <button class="mm-btn" id="mm-controls">CONTROLES</button>
+      <button class="mm-btn" id="mm-credits">CRÉDITOS</button>
+    </div>
+    <div id="mm-version">v1.0 — WebGL • Three.js</div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="vignette"></div>
+  <div id="night-tint"></div>
+  <div id="hurt-vignette"></div>
+
+  <div id="vitals">
+    <div class="row">
+      <div class="lvl-orb" id="lvl-orb">1</div>
+      <div class="barcol">
+        <div class="bar hp"><div class="fill" id="hp-fill"></div><div class="txt" id="hp-txt"></div></div>
+        <div class="bar mp"><div class="fill" id="mp-fill"></div><div class="txt" id="mp-txt"></div></div>
+        <div class="bar sp"><div class="fill" id="sp-fill"></div></div>
+        <div class="bar" id="xpbar"><div class="fill" id="xp-fill" style="background:linear-gradient(90deg,#8a6a20,#f5d97a)"></div></div>
+      </div>
+    </div>
+    <div id="elem-badge"><span class="ico" id="elem-ico">✨</span><span id="elem-name">Sem elemento</span></div>
+  </div>
+
+  <div id="minimap-wrap">
+    <canvas id="minimap" width="180" height="180"></canvas>
+    <div id="clock">☀ 08:00</div>
+  </div>
+  <div id="gold-display">🪙 0</div>
+
+  <div id="quest-tracker">
+    <div class="qt-title" id="qt-title"></div>
+    <div class="qt-obj" id="qt-obj"></div>
+    <div class="qt-dist" id="qt-dist"></div>
+  </div>
+
+  <div id="hotbar"></div>
+  <div id="crosshair"></div>
+  <div id="interact-prompt" class="hidden"></div>
+  <div id="tut-hint" class="hidden"></div>
+
+  <div id="bossbar" class="hidden">
+    <div class="bname" id="boss-name"></div>
+    <div class="bbar"><div class="bfill" id="boss-fill"></div></div>
+  </div>
+
+  <div id="target-frame" class="hidden">
+    <div class="tname" id="tf-name"></div>
+    <div class="tbar"><div class="tfill" id="tf-fill"></div></div>
+    <div class="trank" id="tf-rank"></div>
+  </div>
+
+  <div id="announce">
+    <div class="a-big" id="ann-big"></div>
+    <div class="a-line"></div>
+    <div class="a-small" id="ann-small"></div>
+  </div>
+
+  <div id="dialog" class="hidden">
+    <div class="d-name" id="d-name"></div>
+    <div class="d-text" id="d-text"></div>
+    <div class="d-opts" id="d-opts"></div>
+  </div>
+
+  <div id="toasts"></div>
+  <div id="damage-layer"></div>
+  <div id="fps-counter"></div>
+
+  <div id="mobile-ui">
+    <div id="joystick"><div class="stick" id="joy-stick"></div></div>
+    <div id="m-btns">
+      <div class="m-btn" data-act="attack">ATACAR</div>
+      <div class="m-btn" data-act="dodge">ESQUIVA</div>
+      <div class="m-btn" data-act="spell1">MAGIA 1</div>
+      <div class="m-btn" data-act="interact">USAR</div>
+    </div>
+    <div id="m-look"></div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div class="panel" id="pause-menu">
+  <div class="pbox">
+    <h3>— PAUSA —</h3>
+    <button id="pm-resume">CONTINUAR</button>
+    <button id="pm-save">SALVAR</button>
+    <button id="pm-settings">CONFIGURAÇÕES</button>
+    <button id="pm-controls">CONTROLES</button>
+    <button id="pm-quit">MENU PRINCIPAL</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="panel" id="panel-settings">
+  <div class="pbox">
+    <button class="pclose" data-close>✕</button>
+    <h3>CONFIGURAÇÕES</h3>
+    <div class="set-row"><label>Volume — Música</label><input type="range" id="set-music" min="0" max="100" value="55"><span class="val" id="val-music">55</span></div>
+    <div class="set-row"><label>Volume — Efeitos</label><input type="range" id="set-sfx" min="0" max="100" value="70"><span class="val" id="val-sfx">70</span></div>
+    <div class="set-row"><label>Sensibilidade do mouse</label><input type="range" id="set-sens" min="10" max="200" value="100"><span class="val" id="val-sens">1.0</span></div>
+    <div class="set-row"><label>Distância da câmera</label><input type="range" id="set-camdist" min="40" max="120" value="75"><span class="val" id="val-camdist">7.5</span></div>
+    <div class="set-row"><label>Distância máxima (zoom)</label><input type="range" id="set-cammax" min="80" max="200" value="140"><span class="val" id="val-cammax">14</span></div>
+    <div class="set-row"><label>Inverter eixo vertical</label><input type="checkbox" id="set-invert"></div>
+    <div class="set-row"><label>Sombras</label><select id="set-shadows"><option value="2">Altas</option><option value="1">Médias</option><option value="0">Desligadas</option></select></div>
+    <div class="set-row"><label>Partículas</label><select id="set-particles"><option value="2">Altas</option><option value="1">Médias</option><option value="0">Baixas</option></select></div>
+    <div class="set-row"><label>Mostrar FPS</label><input type="checkbox" id="set-fps" checked></div>
+    <div class="btnrow"><button class="mm-btn" data-close style="width:200px">FECHAR</button></div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="panel" id="panel-controls">
+  <div class="pbox">
+    <button class="pclose" data-close>✕</button>
+    <h3>CONTROLES</h3>
+    <table class="ctl-table">
+      <tr><td>W A S D</td><td>Movimentação</td></tr>
+      <tr><td>Shift</td><td>Correr (sprint)</td></tr>
+      <tr><td>Mouse esquerdo</td><td>Ataque com espada (combo)</td></tr>
+      <tr><td>Botão direito + mouse</td><td>Girar câmera</td></tr>
+      <tr><td>Roda do mouse</td><td>Aproximar / afastar câmera</td></tr>
+      <tr><td>Espaço</td><td>Esquiva (rolamento)</td></tr>
+      <tr><td>F (segurar)</td><td>Defesa / parry</td></tr>
+      <tr><td>1 — 4</td><td>Magias do grimório</td></tr>
+      <tr><td>5 / 6</td><td>Poção de vida / mana</td></tr>
+      <tr><td>G</td><td>Grimório</td></tr>
+      <tr><td>E</td><td>Interagir / falar</td></tr>
+      <tr><td>Tab</td><td>Travar alvo</td></tr>
+      <tr><td>I</td><td>Inventário</td></tr>
+      <tr><td>M</td><td>Mapa do mundo</td></tr>
+      <tr><td>J</td><td>Diário de missões</td></tr>
+      <tr><td>Esc</td><td>Pausa</td></tr>
+    </table>
+    <div class="btnrow"><button class="mm-btn" data-close style="width:200px">FECHAR</button></div>
+  </div>
+</div>
+
+<!-- Credits -->
+<div class="panel" id="panel-credits">
+  <div class="pbox" style="min-width:420px;text-align:center">
+    <button class="pclose" data-close>✕</button>
+    <h3>CRÉDITOS</h3>
+    <div class="credits">
+      <p><b>CRÔNICAS DE AETHERIA — O Despertar dos Elementos</b></p>
+      <p>Jogo original de RPG 3D de fantasia medieval.<br>Construído com Three.js (WebGL), JavaScript e WebAudio.<br>Todos os sistemas, mundos e magias gerados proceduralmente.</p>
+      <p style="margin-top:18px;color:#8a7850">"Todo herói começa em uma vila pequena."</p>
+    </div>
+    <div class="btnrow"><button class="mm-btn" data-close style="width:200px">FECHAR</button></div>
+  </div>
+</div>
+
+<!-- Grimoire -->
+<div class="panel" id="panel-grimoire">
+  <div class="pbox" style="background:none;border:none;box-shadow:none;padding:0">
+    <div id="grimoire-book"></div>
+    <div style="text-align:center;margin-top:10px;color:#a89060;font-size:12px;letter-spacing:2px">Clique em uma magia para ver detalhes • G para fechar</div>
+  </div>
+</div>
+
+<!-- Inventory -->
+<div class="panel" id="panel-inventory">
+  <div class="pbox">
+    <button class="pclose" data-close>✕</button>
+    <h3>INVENTÁRIO</h3>
+    <div class="equip-row" id="equip-slots"></div>
+    <div class="inv-tabs" id="inv-tabs"></div>
+    <div class="inv-grid" id="inv-grid"></div>
+    <div id="inv-detail"></div>
+  </div>
+</div>
+
+<!-- Map -->
+<div class="panel" id="panel-map">
+  <div class="pbox">
+    <button class="pclose" data-close>✕</button>
+    <h3>MAPA DE AETHERIA</h3>
+    <canvas id="map-canvas" width="880" height="620"></canvas>
+    <div class="map-side" id="map-travel"></div>
+  </div>
+</div>
+
+<!-- Quests -->
+<div class="panel" id="panel-quests">
+  <div class="pbox" style="min-width:560px">
+    <button class="pclose" data-close>✕</button>
+    <h3>DIÁRIO DE MISSÕES</h3>
+    <div id="quests-list"></div>
+  </div>
+</div>
+
+<!-- Shop -->
+<div class="panel" id="panel-shop">
+  <div class="pbox">
+    <button class="pclose" data-close>✕</button>
+    <h3 id="shop-title">LOJA</h3>
+    <div class="shop-list" id="shop-list"></div>
+    <div style="text-align:center;margin-top:12px;color:var(--gold2)" id="shop-gold"></div>
+  </div>
+</div>
+
+<script>
+/* Guarda global de erros — tela amigável em vez de tela preta */
+window.__aetheriaErrors=[];
+function __showFatal(msg,detail){
+  try{
+    var ov=document.getElementById('error-overlay');
+    if(!ov)return;
+    document.getElementById('error-msg').textContent=msg;
+    document.getElementById('error-detail').textContent=detail||'';
+    ov.style.display='flex';
+    document.getElementById('loading').style.display='none';
+  }catch(e){console.error(e)}
+}
+window.addEventListener('error',function(e){
+  window.__aetheriaErrors.push(e.message);
+  __showFatal('Ocorreu um erro inesperado.',(e.message||'')+'\n'+(e.filename||'')+':'+(e.lineno||''));
+});
+window.addEventListener('unhandledrejection',function(e){
+  window.__aetheriaErrors.push(String(e.reason));
+  __showFatal('Falha ao carregar um recurso do jogo.',String(e.reason||e));
+});
+</script>
+<script type="module">
+/* Boot com verificação de bibliotecas */
+const load=document.getElementById('loading'), bar=load.querySelector('#loadbar>div'), msg=document.getElementById('loadmsg');
+function prog(p,m){bar.style.width=p+'%';if(m)msg.textContent=m;}
+prog(10,'Verificando bibliotecas…');
+try{
+  const THREE=await import('./vendor/three.module.js');
+  if(!THREE.WebGLRenderer) throw new Error('Three.js inválido');
+  prog(35,'Invocando Aetheria…');
+  const {Game}=await import('./js/main.js');
+  prog(70,'Forjando o mundo…');
+  const game=new Game(THREE, prog);
+  window.__game=game;
+  prog(100,'Pronto!');
+  setTimeout(()=>{ load.style.display='none'; game.hud.showMainMenu(); },250);
+}catch(err){
+  console.error(err);
+  __showFatal('Não foi possível iniciar o jogo. Verifique se o navegador suporta WebGL e JavaScript modules.',String(err&&err.stack||err));
+}
+</script>
+</body>
+</html>
