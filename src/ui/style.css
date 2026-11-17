@@ -195,3 +195,16 @@ button { font-family:inherit; cursor:pointer; }
 #touch-buttons button { width:58px; height:58px; border-radius:50%; background:rgba(20,14,8,.75); border:1px solid var(--panel-border); color:var(--text); font-size:20px; }
 #touch-buttons button:active { background:rgba(80,60,30,.85); }
 @media (max-width:900px){ #minimap{display:none} .bars{width:190px} #hotbar .slot{width:44px;height:44px;font-size:19px} }
+
+/* Tela de encerramento */
+#ending-screen { position:fixed; inset:0; z-index:950; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center, rgba(20,10,30,.88), rgba(5,3,10,.96)); animation:cineIn 1.2s; }
+.ending-box { max-width:640px; padding:42px 48px; text-align:center; background:rgba(18,12,8,.9); border:2px solid var(--gold); border-radius:16px; box-shadow:0 0 60px rgba(232,194,106,.25); color:var(--text); }
+.ending-title { font-size:64px; letter-spacing:.35em; color:var(--gold); text-shadow:0 0 30px rgba(232,194,106,.5); }
+.ending-sub { font-size:15px; letter-spacing:.4em; color:var(--text-dim); margin:6px 0 18px; }
+.ending-box p { font-size:15px; line-height:1.6; color:var(--text); opacity:.9; margin:0 0 20px; }
+.ending-stats { display:flex; justify-content:center; gap:22px; flex-wrap:wrap; margin-bottom:26px; }
+.ending-stats div { display:flex; flex-direction:column; gap:2px; min-width:70px; padding:10px 12px; background:rgba(255,255,255,.05); border:1px solid var(--panel-border); border-radius:10px; }
+.ending-stats span { font-size:11px; letter-spacing:.15em; color:var(--text-dim); text-transform:uppercase; }
+.ending-stats b { font-size:20px; color:var(--gold); }
+#ending-continue { padding:12px 28px; background:#2c2216; color:var(--gold); border:1px solid var(--gold); border-radius:10px; cursor:pointer; font-size:15px; }
+#ending-continue:hover { background:#3c2e1c; }

@@ -18,6 +18,8 @@ const MAT = {
   ice: new THREE.MeshLambertMaterial({ color: 0x8cd9ff, emissive: 0x1a4a6a, transparent: true, opacity: 0.9 }),
   fire: new THREE.MeshLambertMaterial({ color: 0xff5a1a, emissive: 0x8a2a00, flatShading: true }),
   rock: new THREE.MeshLambertMaterial({ color: 0x7a6a55, flatShading: true }),
+  shadow: new THREE.MeshLambertMaterial({ color: 0x1a1024, emissive: 0x3a0a3a, emissiveIntensity: 0.6, flatShading: true }),
+  shadowEye: new THREE.MeshBasicMaterial({ color: 0xff2a6a }),
 };
 
 export const RANKS = {
@@ -42,6 +44,7 @@ export const ENEMY_TYPES = {
   terraElemental:  { name: 'Elemental de Terra', base: 'terra', hp: 90, dmg: 16, speed: 2.2, xp: 50, melee: true, scale: 1.2 },
   bossUgluk:       { name: 'Uglúk, o Devorador', base: 'goblin', hp: 420, dmg: 22, speed: 4.2, xp: 300, melee: true, scale: 1.7, armor: 8, boss: true },
   bossGoblinKing:  { name: 'Rei Goblin Groshnak', base: 'goblin', hp: 620, dmg: 26, speed: 4.4, xp: 500, melee: true, scale: 1.9, armor: 10, boss: true },
+  bossMorgath:     { name: 'Morgath, o Devorador de Reinos', base: 'terra', hp: 1100, dmg: 34, speed: 4.8, xp: 1500, melee: true, scale: 3.0, armor: 14, boss: true, dark: true },
 };
 
 function buildGoblin(type) {
@@ -143,6 +146,16 @@ function buildGoblin(type) {
     torso.material = MAT.rock;
     head.material = MAT.rock;
     g.scale.setScalar(1.2);
+  }
+  // lord sombrio (boss final)
+  if (type.dark) {
+    for (const m of [torso, head, belly]) { m.material = MAT.shadow; }
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.45, 5), MAT.shadowEye);
+    crown.position.y = 1.55; g.add(crown);
+    const aura = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0x3a0a3a, transparent: true, opacity: 0.22 }));
+    aura.position.y = 1.0; g.add(aura);
+    g.userData.aura = aura;
   }
   g.scale.setScalar(s);
   return { group: g, arms, legs };
